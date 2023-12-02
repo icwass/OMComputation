@@ -14,12 +14,12 @@ namespace OMComputation;
 
 using PartType = class_139;
 using Permissions = enum_149;
-//using BondType = enum_126;
+using BondType = enum_126;
 //using BondSite = class_222;
-//using Bond = class_277;
+using Bond = class_277;
 //using AtomTypes = class_175;
 //using PartTypes = class_191;
-//using Texture = class_256;
+using Texture = class_256;
 public static class ComputationPart
 {
 	private static IDetour hook_SEB_method_1994, hook_SEB_method_1996, hook_SES_method_2131, hook_Sim_method_1843;
@@ -29,7 +29,15 @@ public static class ComputationPart
 	private const string ComputationPartTypeField = "OMComputation_ComputationPartType";
 
 	private static Molecule debugMolecule; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-	private static HashSet<HexIndex> debugFootprint; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	private const bool debugReplaceInputWithComputation = true; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	private const bool debugReplaceOutputWithComputation = true; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	private static Texture ioHexBaseInput, ioHexBaseOutput;
+	private static Texture ioHexShadowInput, ioHexShadowOutput;
+	private static Texture ioHexRingInput, ioHexRingOutput;
+	private static Texture ioHexRingGlossMaskInput, ioHexRingGlossMaskOutput;
+	private static Texture ioHexRingGlossInput, ioHexRingGlossOutput;
+	private static Texture ioBondInput, ioBondOutput;
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// public functions
@@ -58,24 +66,36 @@ public static class ComputationPart
 		new DynamicData(ComputationInputPart).Set(ComputationPartTypeField, ComputationInputPart);
 		new DynamicData(ComputationOutputPart).Set(ComputationPartTypeField, ComputationInputPart);
 
-		//string path = "textures/";
+		string path = "computation/textures/parts/";
+
+		ioHexBaseInput = class_235.method_615(path + "input_base");
+		ioHexBaseOutput = class_235.method_615(path + "output_base");
+
+		ioHexShadowInput = class_238.field_1989.field_90.field_164; // bonder_shadow
+		ioHexShadowOutput = class_238.field_1989.field_90.field_193; // output_shadow
+
+		ioHexRingInput = class_235.method_615(path + "input_ring");
+		ioHexRingOutput = class_235.method_615(path + "output_ring");
+
+		ioHexRingGlossMaskInput = class_238.field_1989.field_90.field_182; // input_ring_gloss_mask
+		ioHexRingGlossMaskOutput = class_238.field_1989.field_90.field_192; // output_ring_gloss_mask
+
+		ioHexRingGlossInput = class_235.method_615(path + "input_gloss");
+		ioHexRingGlossOutput = class_235.method_615(path + "output_gloss");
+
+		ioBondInput = class_235.method_615(path + "input_bond");
+		ioBondOutput = class_235.method_615(path + "output_bond");
 
 		QApi.AddPartType(ComputationInputPart, (_, _, _, _) => { });/////////////////////////////////////////////////////////////////
 		QApi.AddPartType(ComputationOutputPart, (_, _, _, _) => { });/////////////////////////////////////////////////////////////////
 
 		debugMolecule = Molecule.method_1122(class_175.field_1678, class_175.field_1675);/////////////////////////////////////////////////////////////////
-		debugFootprint = new()
-		{
-			new HexIndex(0,0),
-			new HexIndex(1,0),
-			new HexIndex(0,1)
-		};
 	}
 
 	public static void LoadHooking()
 	{
-		hook_SEB_method_1994 = new Hook(MainClass.PrivateMethod<SolutionEditorBase>("method_1994"), SEB_DrawFirstInput);
-		hook_SEB_method_1996 = new Hook(MainClass.PrivateMethod<SolutionEditorBase>("method_1996"), SEB_DrawMainPart);
+		hook_SEB_method_1994 = new Hook(MainClass.PrivateMethod<SolutionEditorBase>("method_1994"), SEB_DrawPartMolecules);
+		hook_SEB_method_1996 = new Hook(MainClass.PrivateMethod<SolutionEditorBase>("method_1996"), SEB_DrawPartGlyph);
 		hook_SES_method_2131 = new Hook(MainClass.PrivateMethod<SolutionEditorScreen>("method_2131"), SES_GetHexesForDrawingThePartHandle);
 		hook_Sim_method_1843 = new Hook(MainClass.PrivateMethod<Sim>("method_1843"), Sim_SpawnComputationInputs);
 
@@ -106,8 +126,23 @@ public static class ComputationPart
 	private static bool PartIsComputationIO(Part part) => new DynamicData(part.method_1159()).Get<PartType>(ComputationPartTypeField) != null;
 	private static bool PartIsInput(Part part) => part.method_1159().field_1541;
 	private static bool PartIsOutput(Part part) => part.method_1159().field_1553;
-
-	private static HashSet<HexIndex> GetComputationPartFootprint(Part part) => debugFootprint;
+	private static Molecule GetComputationPartFootprintMolecule(Part part) ////////////////////////////////////////////////////
+	{
+		var ret = debugMolecule.method_1104();
+		ret.method_1105(new Atom(class_175.field_1675), new HexIndex(0, 1));
+		ret.method_1111((BondType) 1, new HexIndex(0, 0), new HexIndex(0, 1));
+		return ret;
+	}
+	private static HashSet<HexIndex> GetComputationPartFootprint(Part part)
+	{
+		var mol = GetComputationPartFootprintMolecule(part);
+		var ret = new HashSet<HexIndex>();
+		foreach (var hex in mol.method_1100().Keys)
+		{
+			ret.Add(hex);
+		}
+		return ret;
+	}
 
 	private static class_195 getPartRenderer(SolutionEditorBase seb, Part part, Vector2 offset)
 	{
@@ -115,25 +150,58 @@ public static class ComputationPart
 		return new class_195(class236.field_1984, class236.field_1985, Editor.method_922());
 	}
 
-
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// hooking functions
 
 
 	////////////////////////////////////////////////////////////
 	private delegate void orig_SolutionEditorBase_method_1994(SolutionEditorBase seb_self, Part part, Vector2 offset, bool flag, bool viewPreviousBoardState);
-	private static void SEB_DrawFirstInput(orig_SolutionEditorBase_method_1994 orig, SolutionEditorBase seb_self, Part part, Vector2 offset, bool flag, bool viewPreviousBoardState)
+	private static void SEB_DrawPartMolecules(orig_SolutionEditorBase_method_1994 orig, SolutionEditorBase seb_self, Part part, Vector2 offset, bool flag, bool viewPreviousBoardState)
 	{
-		if (PartIsInput(part) && PartIsComputationIO(part))
-		{
-			//fetch the first molecule for this computation input
-			var firstMolecule = debugMolecule;
 
-			//then draw it
-			class_236 class236 = seb_self.method_1989(part, offset);
-			if (seb_self.method_503() == enum_128.Stopped && !viewPreviousBoardState)
+		class_236 class236 = seb_self.method_1989(part, offset);
+
+		if (PartIsComputationIO(part))
+		{
+			PartSimState partSimState = seb_self.method_507().method_481(part);
+			Molecule molecule = part.method_1185(seb_self.method_502());////////////////////////////////////////////////////////////////////////////////////////////////////////
+			//do we swap-out the puzzle's io molecules, then put them back?
+			//or do we draw stuff manually?
+			molecule = debugMolecule;
+
+			void method925(float x, float y, float z, bool flg) => Editor.method_925(molecule, class236.field_1984, new HexIndex(0, 0), class236.field_1985, x, y, z, flg, null);
+
+			if (PartIsInput(part))
 			{
-				Editor.method_925(firstMolecule, class236.field_1984, new HexIndex(0, 0), class236.field_1985, 1f, 1f, 1f, false, null);
+				if (partSimState.field_2743)
+				{
+					method925(1f, seb_self.method_504(), 1f, false);
+				}
+				if (seb_self.method_503() == enum_128.Stopped && !viewPreviousBoardState)
+				{
+					method925(1f, 1f, 1f, false);
+				}
+			}
+			else if (PartIsOutput(part))
+			{
+				if (partSimState.field_2731.method_1085() && seb_self.method_510() >= partSimState.field_2731.method_1087() + 0.25f)
+				{
+					partSimState.field_2731 = (Maybe<float>)struct_18.field_1431;
+				}
+				if (partSimState.field_2743)
+				{
+					method925(1f, class_162.method_416(seb_self.method_504(), 0f, 1f, 1f, 0f), 1f, false);
+					method925(0.05f, 1f, 0f, true);
+				}
+				else if (partSimState.field_2731.method_1085())
+				{
+					float num = class_162.method_406(seb_self.method_510() - partSimState.field_2731.method_1087());
+					method925(class_162.method_416(num, 0f, 0.25f, 0.05f, 0.4f), 1f, 0f, true);
+				}
+				else
+				{
+					method925(0.4f, 1f, 0f, true);
+				}
 			}
 		}
 		else
@@ -144,7 +212,7 @@ public static class ComputationPart
 
 	////////////////////////////////////////////////////////////
 	private delegate void orig_SolutionEditorBase_method_1996(SolutionEditorBase seb_self, Part part, Vector2 offset);
-	private static void SEB_DrawMainPart(orig_SolutionEditorBase_method_1996 orig, SolutionEditorBase seb_self, Part part, Vector2 offset)
+	private static void SEB_DrawPartGlyph(orig_SolutionEditorBase_method_1996 orig, SolutionEditorBase seb_self, Part part, Vector2 offset)
 	{
 		if (PartIsComputationIO(part))
 		{
@@ -160,6 +228,8 @@ public static class ComputationPart
 
 
 			}
+
+			method_2000(seb_self.method_1989(part, offset), Editor.method_922(), GetComputationPartFootprintMolecule(part), PartIsInput(part));
 
 			/*
 			class_195 renderer = getPartRenderer(seb_self, part, offset);////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -185,6 +255,52 @@ public static class ComputationPart
 			orig(seb_self, part, offset);
 		}
 	}
+
+	public static void method_2000(
+	class_236 class236,
+	Vector2 rendererOffset,
+	Molecule footprint,
+	bool isInput)
+	{
+		var atomHexes = footprint.method_1100().Keys;
+		class_195 renderer = new class_195(class236.field_1984, class236.field_1985, rendererOffset);
+
+		Texture ioHexBase = isInput ? ioHexBaseInput : ioHexBaseOutput;
+		Texture ioHexShadow = isInput ? ioHexShadowInput : ioHexShadowOutput;
+		Texture ioHexRing = isInput ? ioHexRingInput : ioHexRingOutput;
+		Texture ioHexRingGlossMask = isInput ? ioHexRingGlossMaskInput : ioHexRingGlossMaskOutput;
+		Texture ioHexRingGloss = isInput ? ioHexRingGlossInput : ioHexRingGlossOutput;
+		Texture ioBond = isInput ? ioBondInput : ioBondOutput;
+
+		foreach (HexIndex hex in atomHexes)
+		{
+			renderer.method_525(ioHexBase, new Vector2(-1f, -1f), hex, 0.0f);
+		}
+		foreach (HexIndex hex in atomHexes)
+		{
+			renderer.method_530(ioHexShadow, hex, 4f);
+		}
+		foreach (HexIndex hex in atomHexes)
+		{
+			renderer.method_528(ioHexRing, hex, new Vector2(0f, 0f));
+			class_135.method_257().field_1692 = class_238.field_1995.field_1757; // MaskedGlossPS shader
+			class_135.method_257().field_1693[1] = ioHexRingGloss;
+			class_135.method_257().field_1694[1] = (enum_123)3;
+			class_135.method_257().field_1695 = method_2001(renderer, hex);
+			renderer.method_529(ioHexRingGlossMask, hex, new Vector2(0f, 0f));
+			class_135.method_257().field_1692 = class_135.method_257().field_1696;
+			class_135.method_257().field_1693[1] = class_238.field_1989.field_71; // single white pixel
+			class_135.method_257().field_1694[1] = (enum_123)2;
+		}
+		foreach (Bond bond in (IEnumerable<Bond>)footprint.method_1101())
+		{
+			float angle = class_187.field_1742.method_492(bond.field_2188 - bond.field_2187).Angle();
+			renderer.method_526(ioBond, bond.field_2187, new Vector2(0f, 0f), new Vector2(-23f, 20f), angle);
+		}
+	}
+
+	private static Vector2 method_2001(class_195 renderer, HexIndex hex) => 0.0001f * (renderer.field_1797 + class_187.field_1742.method_492(hex).Rotated(renderer.field_1798) - 0.5f * class_115.field_1433);
+
 
 	////////////////////////////////////////////////////////////
 	private delegate HashSet<HexIndex> orig_SolutionEditorScreen_method_2131(Solution param_5731, Part param_5732);
@@ -236,7 +352,7 @@ public static class ComputationPart
 			{
 				int index = partTypeForToolbar.field_2746;
 				//var molecule = puzzleInputs[index].field_2813;
-				bool isComputationInput = false; // debug
+				bool isComputationInput = debugReplaceInputWithComputation; // debug//////////////////////////////////////////////////////////////////////////////////
 				if (isComputationInput) partTypeForToolbar.field_2745 = ComputationInputPart;
 			}
 		}
@@ -248,8 +364,8 @@ public static class ComputationPart
 			{
 				int index = partTypeForToolbar.field_2746;
 				//var molecule = puzzleInputs[index].field_2813;
-				bool isComputationOutput = false; // debug
-				if (isComputationOutput) partTypeForToolbar.field_2745 = ComputationInputPart;
+				bool isComputationOutput = debugReplaceOutputWithComputation; // debug//////////////////////////////////////////////////////////////////////////////////
+				if (isComputationOutput) partTypeForToolbar.field_2745 = ComputationOutputPart;
 			}
 		}
 
