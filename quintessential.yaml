@@ -1,6 +1,6 @@
 Name: OMCOMPUTATION
-Version: 0.0.1
-Icon: mod_icon
+Version: 0.0.2
+Icon: "computation/mod_icon"
 Title: The Computation Mod
 Desc: Create and play computation puzzles.
 DLL: "OMComputation/bin/Debug/net452/OMComputation.dll"
