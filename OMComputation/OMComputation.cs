@@ -30,11 +30,12 @@ public class MainClass : QuintessentialMod
 	}
 	public override void LoadPuzzleContent()
 	{
-		//
+		ComputationPart.LoadPuzzleContent();
+		ComputationPart.LoadHooking();
 	}
 	public override void Unload()
 	{
-		//
+		ComputationPart.UnloadHooking();
 	}
 	public override void PostLoad()
 	{
