@@ -53,13 +53,12 @@ public class ComputationManager
 
 
 
-	public static HashSet<HexIndex> GetFootprint(Solution solution, Part part)
+	public static HashSet<HexIndex> GetFootprint(Solution solution, Part part) => GetFootprint(solution, part.method_1167(), PartIsInput(part));
+	public static HashSet<HexIndex> GetFootprint(Solution solution, int ioIndex, bool isInput)
 	{
 		// use the Solution to search the ComputationManager dictionary to find the desired info
 		// use the Part to get the Footprint
 		var puzzleID = solution.method_1934().field_2766;
-		bool isInput = PartIsInput(part);
-		int ioIndex = part.method_1167();
 
 		//debug/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		return new HashSet<HexIndex>
@@ -71,13 +70,12 @@ public class ComputationManager
 		};
 	}
 
-	public static Molecule GetProfile(Solution solution, Part part)
+	public static Molecule GetProfile(Solution solution, Part part) => GetProfile(solution, part.method_1167(), PartIsInput(part));
+	public static Molecule GetProfile(Solution solution, int ioIndex, bool isInput)
 	{
 		// use the Solution to search the ComputationManager dictionary to find the desired info
 		// use the Part to get the Profile
 		var puzzleID = solution.method_1934().field_2766;
-		bool isInput = PartIsInput(part);
-		int ioIndex = part.method_1167();
 
 		//debug/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		var ret = debugMoleculeA.method_1104();
