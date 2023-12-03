@@ -23,7 +23,7 @@ using Texture = class_256;
 
 public static class ComputationPart
 {
-	private static IDetour hook_SES_method_2131, hook_SEB_method_1994, hook_SEB_method_1996;
+	private static IDetour hook_SES_method_2131, hook_Sim_method_1843, hook_Sim_method_1832, hook_SEB_method_1994, hook_SEB_method_1996;
 
 
 	private static PartType ComputationInputPart, ComputationOutputPart;
@@ -90,6 +90,9 @@ public static class ComputationPart
 	{
 		hook_SES_method_2131 = new Hook(MainClass.PrivateMethod<SolutionEditorScreen>("method_2131"), SES_GetHexesForDrawingThePartHandle);
 
+		hook_Sim_method_1843 = new Hook(MainClass.PrivateMethod<Sim>("method_1843"), Sim_SpawnComputationInputs);
+		hook_Sim_method_1832 = new Hook(MainClass.PrivateMethod<Sim>("method_1832"), Sim_AcceptComputationOutputs);
+
 		hook_SEB_method_1994 = new Hook(MainClass.PrivateMethod<SolutionEditorBase>("method_1994"), SEB_DrawPartMolecules);
 		hook_SEB_method_1996 = new Hook(MainClass.PrivateMethod<SolutionEditorBase>("method_1996"), SEB_DrawPartGlyph);
 
@@ -99,12 +102,12 @@ public static class ComputationPart
 		On.SolutionEditorBase.method_1998 += PartStrokeDrawing;
 
 		On.SolutionEditorPartsPanel.class_428.method_2047 += ConvertComputationIOInThePartsTray;
-
-
 	}
 	public static void UnloadHooking()
 	{
 		hook_SES_method_2131.Dispose();
+		hook_Sim_method_1843.Dispose();
+		hook_Sim_method_1832.Dispose();
 		hook_SEB_method_1994.Dispose();
 		hook_SEB_method_1996.Dispose();
 	}
@@ -112,7 +115,7 @@ public static class ComputationPart
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// helper functions
 	private static bool PartIsComputationIO(Part part) => part.method_1159() == ComputationInputPart || part.method_1159() == ComputationOutputPart;
-
+	private static bool PartIsInput(Part part) => part.method_1159().field_1541;
 
 	private static Sim getSimFromSeb(SolutionEditorBase seb)
 	{
@@ -140,6 +143,77 @@ public static class ComputationPart
 	}
 
 	////////////////////////////////////////////////////////////
+	private delegate void orig_Sim_method_1843(Sim sim_self);
+	private static void Sim_SpawnComputationInputs(orig_Sim_method_1843 orig, Sim sim_self)
+	{
+		HashSet<HexIndex> hexIndexSet = new HashSet<HexIndex>();
+		foreach (Molecule molecule in sim_self.field_3823) hexIndexSet.UnionWith(molecule.method_1100().Keys);
+
+		// don't let computation inputs spawn the "normal" molecule
+		ComputationInputPart.field_1541 = false;
+		orig(sim_self);
+		ComputationInputPart.field_1541 = true;
+
+		var solution = sim_self.field_3818.method_502();
+
+		// instead, spawn the computation molecule
+		foreach (Part ioInput in solution.field_3919.Where(x => PartIsInput(x) && PartIsComputationIO(x)))
+		{
+			HexIndex shift = ioInput.method_1161();
+			HexRotation rotate = ioInput.method_1163();
+			Molecule reagent = ComputationManager.GetMolecule(sim_self, ioInput).method_1115(rotate).method_1117(shift);
+
+			bool inputIsBlocked = (bool)MainClass.PrivateMethod<Sim>("method_1837").Invoke(sim_self, new object[] { reagent, hexIndexSet });
+
+			if (!inputIsBlocked)
+			{
+				sim_self.field_3823.Add(reagent);
+				ComputationManager.NextMolecule(sim_self, ioInput);
+			}
+		}
+	}
+	////////////////////////////////////////////////////////////
+	private delegate void orig_Sim_method_1832(Sim sim_self, bool isConsumptionStep);
+	private static void Sim_AcceptComputationOutputs(orig_Sim_method_1832 orig, Sim sim_self, bool isConsumptionStep)///////////////////////////////////////////////////////////////////
+	{
+		var solution = sim_self.field_3818.method_502();
+		var puzzle = solution.method_1934();
+		PuzzleInputOutput[] puzzleOutputs = puzzle.field_2771;
+		var computationOutputs = solution.field_3919.Where(x => x.method_1159().field_1553 && PartIsComputationIO(x));
+
+		// record what the puzzle outputs are
+		Molecule[] originalOutputs = new Molecule[puzzleOutputs.Length];
+		for (int i = 0; i < puzzleOutputs.Length; i++)
+		{
+			originalOutputs[i] = puzzleOutputs[i].field_2813;
+		}
+		// switcheroo molecule outputs in the puzzle file
+		foreach (var computationOutput in computationOutputs)
+		{
+			var product = ComputationManager.GetMolecule(sim_self, computationOutput);
+			puzzleOutputs[computationOutput.method_1167()].field_2813 = product;
+		}
+
+		orig(sim_self, isConsumptionStep);
+
+		// restore the puzzle outputs
+		for (int i = 0; i < puzzleOutputs.Length; i++)
+		{
+			puzzleOutputs[i].field_2813 = originalOutputs[i];
+		}
+		// update computation outputs that accepted a product
+		foreach (var computationOutput in computationOutputs)
+		{
+			var partSimState = sim_self.field_3821[computationOutput];
+			if (partSimState.field_2743) ComputationManager.NextMolecule(sim_self, computationOutput);
+		}
+	}
+
+
+
+	
+
+	////////////////////////////////////////////////////////////
 	private delegate void orig_SolutionEditorBase_method_1994(SolutionEditorBase seb_self, Part part, Vector2 offset, bool flag, bool viewPreviousBoardState);
 	private static void SEB_DrawPartMolecules(orig_SolutionEditorBase_method_1994 orig, SolutionEditorBase seb_self, Part part, Vector2 offset, bool flag, bool viewPreviousBoardState)
 	{
@@ -151,13 +225,15 @@ public static class ComputationPart
 
 		PartSimState partSimState = seb_self.method_507().method_481(part);
 		Molecule molecule = ComputationManager.GetMolecule(getSimFromSeb(seb_self), part);
+		Molecule prevMolecule = ComputationManager.GetPreviousMolecule(getSimFromSeb(seb_self), part);
 
 		class_236 class236 = seb_self.method_1989(part, offset);
-		void method925(float x, float y, float z, bool flg) => Editor.method_925(molecule, class236.field_1984, new HexIndex(0, 0), class236.field_1985, x, y, z, flg, null);
+		void method925(float x, float y, float z, bool flg, bool prev = false)
+		{
+			Editor.method_925(prev ? prevMolecule : molecule, class236.field_1984, new HexIndex(0, 0), class236.field_1985, x, y, z, flg, null);
+		}
 
-		bool isInput = part.method_1159().field_1541;
-
-		if (isInput)
+		if (PartIsInput(part))
 		{
 			bool drawDuringEditing = seb_self.method_503() == enum_128.Stopped && !viewPreviousBoardState;
 			if (partSimState.field_2743) method925(1f, seb_self.method_504(), 1f, false);
@@ -172,7 +248,7 @@ public static class ComputationPart
 
 			if (partSimState.field_2743)
 			{
-				method925(1f, class_162.method_416(seb_self.method_504(), 0f, 1f, 1f, 0f), 1f, false);
+				method925(1f, class_162.method_416(seb_self.method_504(), 0f, 1f, 1f, 0f), 1f, false, true);
 				method925(0.05f, 1f, 0f, true);
 			}
 			else if (partSimState.field_2731.method_1085())
@@ -197,7 +273,6 @@ public static class ComputationPart
 			return;
 		}
 
-		bool isInput = part.method_1159().field_1541;
 		var solution = seb_self.method_502();
 		var footprint = ComputationManager.GetFootprint(solution, part);
 		var profile = ComputationManager.GetProfile(solution, part);
@@ -208,7 +283,7 @@ public static class ComputationPart
 		Vector2 rendererOffset = Editor.method_922();
 		class_195 renderer = new class_195(class236.field_1984, class236.field_1985, rendererOffset);
 
-		Texture[] ioTextures = isInput ? ioInput : ioOutput;
+		Texture[] ioTextures = PartIsInput(part) ? ioInput : ioOutput;
 
 		Texture ioHexBase = ioTextures[0];
 		Texture ioHexShadow = ioTextures[1];
@@ -371,50 +446,13 @@ public static class ComputationPart
 
 public static class oldComputationPart
 {
-	private static IDetour hook_Sim_method_1843;
-	//
-	private static PartType ComputationInputPart;
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// public functions
-
 	public static void LoadHooking()
 	{
-		hook_Sim_method_1843 = new Hook(MainClass.PrivateMethod<Sim>("method_1843"), Sim_SpawnComputationInputs);
 
 		//On.Solution.method_1959 += SolutionWriteExtension;
 		//On.Solution.method_1960 += SolutionReadExtension;
 
 		//On.SolutionEditorScreen.method_50 += EditorChangeMonomerExtension;
 	}
-	public static void UnloadHooking()
-	{
-		hook_Sim_method_1843.Dispose();
-	}
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// hooking functions
-
-	////////////////////////////////////////////////////////////
-	private delegate void orig_Sim_method_1843(Sim sim_self);
-	private static void Sim_SpawnComputationInputs(orig_Sim_method_1843 orig, Sim sim_self)////////////////////////////////////////////////////////////////////////////////////
-	{
-		// inputs spawn molecules if there is room on the board for it
-		// for now, do nothing
-
-		ComputationInputPart.field_1541 = false;
-		orig(sim_self);
-		ComputationInputPart.field_1541 = true;
-	}
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
 
 }

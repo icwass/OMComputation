@@ -86,14 +86,7 @@ public class ComputationManager
 		return ret;
 	}
 
-	public static Molecule GetMolecule(Sim sim, Part part) // => GetMolecule(sim, part.method_1167(), PartIsInput(part));
-	{
-		//debug/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		if (sim == null) return GetMolecule(sim, part.method_1167(), PartIsInput(part));
-		var partSimState = sim.field_3821[part];
-		var moleculeCounter = partSimState.field_2730;
-		return moleculeCounter % 2 == 1 ^ PartIsInput(part) ? debugMoleculeA : debugMoleculeB;
-	}
+	public static Molecule GetMolecule(Sim sim, Part part) => GetMolecule(sim, part.method_1167(), PartIsInput(part));
 	public static Molecule GetMolecule(Sim sim, int ioIndex, bool isInput)
 	{
 		//ComputationManager manager;////////////////////////////////////////////////////////////////////////////
@@ -103,11 +96,48 @@ public class ComputationManager
 		}
 		else
 		{
-			// use the Sim to get the Manager (generate it necessary)
+			// use the Sim to get the Manager (generate if necessary)
 		}
 
 		//debug/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		return isInput ? debugMoleculeA : debugMoleculeB;
+
+
+
+		return (isInput ? DEBUG_BOOL_INPUT : DEBUG_BOOL_OUTPUT) ? debugMoleculeA : debugMoleculeB;
+	}
+	public static Molecule GetPreviousMolecule(Sim sim, Part part) => GetPreviousMolecule(sim, part.method_1167(), PartIsInput(part));
+
+	public static Molecule GetPreviousMolecule(Sim sim, int ioIndex, bool isInput)
+	{
+		if (sim == null) return GetMolecule(sim, ioIndex, isInput);
+
+
+		//ComputationManager manager;////////////////////////////////////////////////////////////////////////////
+
+
+		//debug/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		return (isInput ? DEBUG_BOOL_INPUT : DEBUG_BOOL_OUTPUT) ? debugMoleculeB : debugMoleculeA;
+	}
+
+
+
+
+
+
+
+
+
+	private static bool DEBUG_BOOL_INPUT = true;
+	private static bool DEBUG_BOOL_OUTPUT = false;
+	public static void NextMolecule(Sim sim, Part part) => NextMolecule(sim, part.method_1167(), PartIsInput(part));
+	public static void NextMolecule(Sim sim, int ioIndex, bool isInput)
+	{
+		//ComputationManager manager;////////////////////////////////////////////////////////////////////////////
+
+
+		//debug/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		DEBUG_BOOL_INPUT = DEBUG_BOOL_INPUT ^ isInput;
+		DEBUG_BOOL_OUTPUT = DEBUG_BOOL_OUTPUT ^ !isInput;
 	}
 
 
