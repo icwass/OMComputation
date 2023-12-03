@@ -20,7 +20,37 @@ using Bond = class_277;
 //using AtomTypes = class_175;
 //using PartTypes = class_191;
 using Texture = class_256;
+
 public static class ComputationPart
+{
+	//
+	public static void LoadPuzzleContent()
+	{
+		//
+
+
+	}
+	public static void LoadHooking()
+	{
+		//
+
+
+	}
+	public static void UnloadHooking()
+	{
+		//
+
+
+
+	}
+
+
+
+}
+
+
+
+public static class oldComputationPart
 {
 	private static IDetour hook_SEB_method_1994, hook_SEB_method_1996, hook_SES_method_2131, hook_Sim_method_1843;
 	//
@@ -28,7 +58,6 @@ public static class ComputationPart
 
 	private const string ComputationPartTypeField = "OMComputation_ComputationPartType";
 
-	private static Molecule debugMolecule; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	private const bool debugReplaceInputWithComputation = true; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	private const bool debugReplaceOutputWithComputation = true; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -88,8 +117,6 @@ public static class ComputationPart
 
 		QApi.AddPartType(ComputationInputPart, (_, _, _, _) => { });/////////////////////////////////////////////////////////////////
 		QApi.AddPartType(ComputationOutputPart, (_, _, _, _) => { });/////////////////////////////////////////////////////////////////
-
-		debugMolecule = Molecule.method_1122(class_175.field_1678, class_175.field_1675);/////////////////////////////////////////////////////////////////
 	}
 
 	public static void LoadHooking()
@@ -126,29 +153,25 @@ public static class ComputationPart
 	private static bool PartIsComputationIO(Part part) => new DynamicData(part.method_1159()).Get<PartType>(ComputationPartTypeField) != null;
 	private static bool PartIsInput(Part part) => part.method_1159().field_1541;
 	private static bool PartIsOutput(Part part) => part.method_1159().field_1553;
-	private static Molecule GetComputationPartFootprintMolecule(Part part) ////////////////////////////////////////////////////
-	{
-		var ret = debugMolecule.method_1104();
-		ret.method_1105(new Atom(class_175.field_1675), new HexIndex(0, 1));
-		ret.method_1111((BondType) 1, new HexIndex(0, 0), new HexIndex(0, 1));
-		return ret;
-	}
-	private static HashSet<HexIndex> GetComputationPartFootprint(Part part)
-	{
-		var mol = GetComputationPartFootprintMolecule(part);
-		var ret = new HashSet<HexIndex>();
-		foreach (var hex in mol.method_1100().Keys)
-		{
-			ret.Add(hex);
-		}
-		return ret;
-	}
+
+
 
 	private static class_195 getPartRenderer(SolutionEditorBase seb, Part part, Vector2 offset)
 	{
 		class_236 class236 = seb.method_1989(part, offset);
 		return new class_195(class236.field_1984, class236.field_1985, Editor.method_922());
 	}
+
+	private static Sim getSimFromSeb(SolutionEditorBase seb)
+	{
+		if (seb is SolutionEditorScreen) return getSimFromSes((SolutionEditorScreen)seb);
+		if (seb is class_194) return getSimFrom194((class_194)seb);
+
+		Logger.Log("[OMComputation] getSimFromSeb: incompatible SolutionEditorBase encountered.");
+		throw new Exception("Could not extract Sim from Seb");
+	}
+	private static Sim getSimFromSes(SolutionEditorScreen ses) => new DynamicData(ses).Get<Maybe<Sim>>("field_4022").method_1087();
+	private static Sim getSimFrom194(class_194 class194) => class194.method_500();
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// hooking functions
@@ -167,7 +190,7 @@ public static class ComputationPart
 			Molecule molecule = part.method_1185(seb_self.method_502());////////////////////////////////////////////////////////////////////////////////////////////////////////
 			//do we swap-out the puzzle's io molecules, then put them back?
 			//or do we draw stuff manually?
-			molecule = debugMolecule;
+			molecule = ComputationManager.GetMolecule(getSimFromSeb(seb_self), part);
 
 			void method925(float x, float y, float z, bool flg) => Editor.method_925(molecule, class236.field_1984, new HexIndex(0, 0), class236.field_1985, x, y, z, flg, null);
 
@@ -229,7 +252,7 @@ public static class ComputationPart
 
 			}
 
-			method_2000(seb_self.method_1989(part, offset), Editor.method_922(), GetComputationPartFootprintMolecule(part), PartIsInput(part));
+			method_2000(seb_self.method_1989(part, offset), Editor.method_922(), ComputationManager.GetProfile(seb_self.method_502(), part), PartIsInput(part));
 
 			/*
 			class_195 renderer = getPartRenderer(seb_self, part, offset);////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -308,7 +331,7 @@ public static class ComputationPart
 	{
 		if (PartIsComputationIO(part))
 		{
-			return GetComputationPartFootprint(part);
+			return ComputationManager.GetFootprint(solution, part);
 		}
 		else
 		{
@@ -384,7 +407,7 @@ public static class ComputationPart
 		if (PartIsComputationIO(part_self))
 		{
 			HashSet<HexIndex> ret = new HashSet<HexIndex>();
-			foreach (HexIndex hexIndex in GetComputationPartFootprint(part_self))
+			foreach (HexIndex hexIndex in ComputationManager.GetFootprint(solution, part_self))
 			{
 				ret.Add(hexIndex.Rotated(rotate) + shift);
 			}
@@ -404,7 +427,7 @@ public static class ComputationPart
 			if (alpha == 0f) return;
 			Color color = Color.White.WithAlpha(alpha);
 			class_236 class236 = seb_self.method_1989(part, offset);
-			MainClass.PrivateMethod<SolutionEditorBase>("method_2017").Invoke(seb_self, new object[] { class236, GetComputationPartFootprint(part), color });
+			MainClass.PrivateMethod<SolutionEditorBase>("method_2017").Invoke(seb_self, new object[] { class236, ComputationManager.GetFootprint(seb_self.method_502(), part), color });
 		}
 		else
 		{

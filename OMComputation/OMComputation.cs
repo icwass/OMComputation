@@ -30,6 +30,8 @@ public class MainClass : QuintessentialMod
 	}
 	public override void LoadPuzzleContent()
 	{
+		ComputationManager.LoadPuzzleContent();
+
 		ComputationPart.LoadPuzzleContent();
 		ComputationPart.LoadHooking();
 	}
