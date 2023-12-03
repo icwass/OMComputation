@@ -36,9 +36,18 @@ public class ComputationManager
 		//
 
 
-
+		//debug/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		debugMoleculeA = Molecule.method_1122(class_175.field_1678, class_175.field_1675);/////////////////////////////////////////////////////////////////
-		debugMoleculeB = Molecule.method_1122(class_175.field_1679, class_175.field_1675);/////////////////////////////////////////////////////////////////
+		debugMoleculeB = Molecule.method_1122(class_175.field_1675, class_175.field_1678);/////////////////////////////////////////////////////////////////
+	}
+
+	public static bool IOPartIsComputationIO(Solution solution, int index, bool isInput)
+	{
+		// use the Solution to search the ComputationManager dictionary to find the desired info
+		var puzzleID = solution.method_1934().field_2766;
+
+		//debug/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		return puzzleID == "P030b" && index == 0;  // Life Sensing Potion
 	}
 
 
@@ -53,7 +62,6 @@ public class ComputationManager
 		int ioIndex = part.method_1167();
 
 		//debug/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 		return new HashSet<HexIndex>
 		{
 			new HexIndex(0,0),
@@ -72,27 +80,34 @@ public class ComputationManager
 		int ioIndex = part.method_1167();
 
 		//debug/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 		var ret = debugMoleculeA.method_1104();
 		ret.method_1105(new Atom(class_175.field_1675), new HexIndex(0, 1));
 		ret.method_1111((BondType)1, new HexIndex(0, 0), new HexIndex(0, 1));
 		return ret;
 	}
 
-	public static Molecule GetMolecule(Sim sim, Part part)
+	public static Molecule GetMolecule(Sim sim, Part part) // => GetMolecule(sim, part.method_1167(), PartIsInput(part));
 	{
-		// use the Sim to get the Manager (generate it necessary)
-		// use the Part to get the Molecule from the Manager
-		var manager = GetComputationManager(sim);
-		bool isInput = PartIsInput(part);
-		int ioIndex = part.method_1167();
-
 		//debug/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+		if (sim == null) return GetMolecule(sim, part.method_1167(), PartIsInput(part));
 		var partSimState = sim.field_3821[part];
 		var moleculeCounter = partSimState.field_2730;
+		return moleculeCounter % 2 == 1 ^ PartIsInput(part) ? debugMoleculeA : debugMoleculeB;
+	}
+	public static Molecule GetMolecule(Sim sim, int ioIndex, bool isInput)
+	{
+		//ComputationManager manager;////////////////////////////////////////////////////////////////////////////
+		if (sim == null)
+		{
+			// generate a throw-away manager
+		}
+		else
+		{
+			// use the Sim to get the Manager (generate it necessary)
+		}
 
-		return moleculeCounter % 2 == 1 ^ isInput ? debugMoleculeA : debugMoleculeB;
+		//debug/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		return isInput ? debugMoleculeA : debugMoleculeB;
 	}
 
 
