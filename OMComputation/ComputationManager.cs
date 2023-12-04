@@ -81,7 +81,7 @@ public class ComputationManager
 		var ret = debugMoleculeA.method_1104();
 		ret.method_1105(new Atom(class_175.field_1675), new HexIndex(0, 1));
 		ret.method_1111((BondType)1, new HexIndex(0, 0), new HexIndex(0, 1));
-		return ret;
+		return ret.method_1104();
 	}
 
 	public static Molecule GetMolecule(Sim sim, Part part) => GetMolecule(sim, part.method_1167(), PartIsInput(part));
@@ -99,9 +99,9 @@ public class ComputationManager
 
 		//debug/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+		var ret = (isInput ? DEBUG_BOOL_INPUT : DEBUG_BOOL_OUTPUT) ? debugMoleculeA : debugMoleculeB;
 
-
-		return (isInput ? DEBUG_BOOL_INPUT : DEBUG_BOOL_OUTPUT) ? debugMoleculeA : debugMoleculeB;
+		return ret.method_1104();
 	}
 	public static Molecule GetPreviousMolecule(Sim sim, Part part) => GetPreviousMolecule(sim, part.method_1167(), PartIsInput(part));
 
