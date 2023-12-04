@@ -30,10 +30,14 @@ public class MainClass : QuintessentialMod
 	}
 	public override void LoadPuzzleContent()
 	{
-		ComputationManager.LoadPuzzleContent();
-
 		ComputationPart.LoadPuzzleContent();
 		ComputationPart.LoadHooking();
+
+
+
+		API.DebugLoadPuzzleContent();
+
+
 	}
 	public override void Unload()
 	{
@@ -42,5 +46,7 @@ public class MainClass : QuintessentialMod
 	public override void PostLoad()
 	{
 		//
+
+		// read-in computation.yamls and add to dictionary
 	}
 }
