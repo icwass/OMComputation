@@ -46,11 +46,18 @@ public static class API
 		public readonly HashSet<HexIndex> footprint;
 		public readonly Molecule profile;
 
-		public IOGlyph(IOIndex ioIndex, HashSet<HexIndex> footprint, Molecule profile)
+		public IOGlyph(IOIndex ioIndex, Molecule profile, HashSet<HexIndex> footprint)
 		{
 			this.ioIndex = ioIndex;
 			this.footprint = footprint;
 			this.profile = profile;
+		}
+
+		public IOGlyph(IOIndex ioIndex, Molecule profile)
+		{
+			this.ioIndex = ioIndex;
+			this.profile = profile;
+			this.footprint = GetFootprintFromMolecule(profile);
 		}
 	}
 
@@ -64,21 +71,6 @@ public static class API
 	// <param name="position">The position of the part.</param>
 	// <param name="editor">The solution editor that the part is being displayed in.</param>
 	// <param name="helper">An object containing functions for rendering images, at different positions/rotations and lightmaps.</param>
-
-
-
-
-	public static void AddComputationPuzzleDefinition(string puzzleID, List<IOGlyph> ioDefs, ComputationManagerMaker managerMaker)
-	{
-		if (!computationPuzzleDefinitions.ContainsKey(puzzleID))
-		{
-			computationPuzzleDefinitions.Add(puzzleID, new ComputationPuzzleDefinition(puzzleID, ioDefs, managerMaker));
-			Logger.Log("[OMComputation] Added ComputationPuzzleDefinition for '" + puzzleID + "'.");
-			return;
-		}
-
-		Logger.Log("[OMComputation] AddComputationPuzzleDefinition: There is already a ComputationPuzzleDefinition for '" + puzzleID + "', ignoring.");
-	}
 
 
 	public static HashSet<HexIndex> GetFootprintFromMolecule(Molecule molecule) => GetFootprintFromMolecules(new List<Molecule>() { molecule });
@@ -106,7 +98,51 @@ public static class API
 		return ret.method_1104();
 	}
 
+	public static void AddComputationPuzzleDefinition(string puzzleID, List<IOGlyph> ioGlyphs, ComputationManagerMaker managerMaker)
+	{
+		if (!computationPuzzleDefinitions.ContainsKey(puzzleID))
+		{
+			computationPuzzleDefinitions.Add(puzzleID, new ComputationPuzzleDefinition(puzzleID, ioGlyphs, managerMaker));
+			Logger.Log("[OMComputation] Added ComputationPuzzleDefinition for '" + puzzleID + "'.");
+			return;
+		}
 
+		Logger.Log("[OMComputation] AddComputationPuzzleDefinition: There is already a ComputationPuzzleDefinition for '" + puzzleID + "', ignoring.");
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// "read-only" public functions
 	public static bool PartIsInput(Part part) => part.method_1159().field_1541;

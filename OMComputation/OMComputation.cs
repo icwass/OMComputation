@@ -104,11 +104,11 @@ public class MainClass : QuintessentialMod
 
 		var singleAtomMolecule = Molecule.method_1121(salt);
 
-		var def1 = new API.IOGlyph(new API.IOIndex(0, true), API.GetFootprintFromMolecules(saltMolecules), API.GetProfileFromMolecules(saltMolecules));
+		var def1 = new API.IOGlyph(new API.IOIndex(0, true), API.GetProfileFromMolecules(saltMolecules));
 
-		var def2 = new API.IOGlyph(new API.IOIndex(0, true), API.GetFootprintFromMolecule(singleAtomMolecule), singleAtomMolecule);
+		var def2 = new API.IOGlyph(new API.IOIndex(0, true), singleAtomMolecule);
 
-		var def3 = new API.IOGlyph(new API.IOIndex(0, false), API.GetFootprintFromMolecule(saltLeft), singleAtomMolecule);
+		var def3 = new API.IOGlyph(new API.IOIndex(0, false), singleAtomMolecule, API.GetFootprintFromMolecule(saltLeft));
 
 
 		API.AddComputationPuzzleDefinition("computation-example-1", new List<API.IOGlyph>() { def1 }, (_) => new ComputationManagerTest1());
