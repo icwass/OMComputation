@@ -54,50 +54,6 @@ public static class API
 		}
 	}
 
-
-	private class ComputationManagerTest1 : ComputationManagerBase
-	{
-		bool left = true;
-		public override void AddMoleculesToQueues(IOIndex ioIndex)
-		{
-			AddMoleculeToQueue(ioIndex, left ? saltLeft : saltRight);
-			left = !left;
-		}
-	}
-
-	static Molecule saltLeft = new Molecule();
-	static Molecule saltRight = new Molecule();
-
-	public static void DebugLoadPuzzleContent()
-	{
-		var salt = class_175.field_1675;
-		saltLeft.method_1105(new Atom(salt), new HexIndex(0, 0));
-		foreach (var hex in new HexIndex[3] { new HexIndex(-1, 0), new HexIndex(0, 1), new HexIndex(1, -1) })
-		{
-			saltLeft.method_1105(new Atom(salt), hex);
-			saltLeft.method_1111((enum_126)1, new HexIndex(0, 0), hex);
-		}
-		saltRight = saltLeft.method_1115(new HexRotation(1));
-
-		var saltMolecules = new List<Molecule>() {saltLeft , saltRight};
-
-		var test = new HashSet<HexIndex>() { new HexIndex(0, 0) , new HexIndex(1, 0) , new HexIndex(0, 1) , new HexIndex(-1, 1) , new HexIndex(-1, 0) , new HexIndex(0, -1) , new HexIndex(1, -1) };
-
-		var def = new IODefinition(new IOIndex(0, true), GetFootprintFromMolecules(saltMolecules), GetProfileFromMolecules(saltMolecules));
-
-
-
-		AddComputationPuzzleDefinition("computation-example-1", new List<IODefinition>() { def }, (_) => new ComputationManagerTest1());
-	}
-
-
-
-
-
-
-
-
-
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// public API functions
 
@@ -160,7 +116,7 @@ public static class API
 	{
 		var puzzleID = solution.method_1934().field_2766;
 		if (computationPuzzleDefinitions.ContainsKey(puzzleID)) return computationPuzzleDefinitions[puzzleID].IOPartIsComputationIO(new IOIndex(index, isInput));
-		throw new Exception(invalidPuzzleID(puzzleID));
+		return false;
 	}
 
 	public static HashSet<HexIndex> GetFootprint(Solution solution, Part part) => GetFootprint(solution, part.method_1167(), PartIsInput(part));
@@ -353,7 +309,6 @@ public static class API
 
 		// functions that need to be defined when deriving a ComputationManager subclass
 		public abstract void AddMoleculesToQueues(IOIndex ioIndexThatNeedsMolecules);
-
 
 
 		// default functions
