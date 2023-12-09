@@ -104,15 +104,15 @@ public class MainClass : QuintessentialMod
 
 		var singleAtomMolecule = Molecule.method_1121(salt);
 
-		var def1 = new API.IODefinition(new API.IOIndex(0, true), API.GetFootprintFromMolecules(saltMolecules), API.GetProfileFromMolecules(saltMolecules));
+		var def1 = new API.IOGlyph(new API.IOIndex(0, true), API.GetFootprintFromMolecules(saltMolecules), API.GetProfileFromMolecules(saltMolecules));
 
-		var def2 = new API.IODefinition(new API.IOIndex(0, true), API.GetFootprintFromMolecule(singleAtomMolecule), singleAtomMolecule);
+		var def2 = new API.IOGlyph(new API.IOIndex(0, true), API.GetFootprintFromMolecule(singleAtomMolecule), singleAtomMolecule);
 
-		var def3 = new API.IODefinition(new API.IOIndex(0, false), API.GetFootprintFromMolecule(saltLeft), singleAtomMolecule);
+		var def3 = new API.IOGlyph(new API.IOIndex(0, false), API.GetFootprintFromMolecule(saltLeft), singleAtomMolecule);
 
 
-		API.AddComputationPuzzleDefinition("computation-example-1", new List<API.IODefinition>() { def1 }, (_) => new ComputationManagerTest1());
-		API.AddComputationPuzzleDefinition("computation-example-2", new List<API.IODefinition>() { def2 }, (_) => new ComputationManagerTest2());
-		API.AddComputationPuzzleDefinition("computation-example-3", new List<API.IODefinition>() { def3 }, (_) => new ComputationManagerTest3());
+		API.AddComputationPuzzleDefinition("computation-example-1", new List<API.IOGlyph>() { def1 }, (_) => new ComputationManagerTest1());
+		API.AddComputationPuzzleDefinition("computation-example-2", new List<API.IOGlyph>() { def2 }, (_) => new ComputationManagerTest2());
+		API.AddComputationPuzzleDefinition("computation-example-3", new List<API.IOGlyph>() { def3 }, (_) => new ComputationManagerTest3());
 	}
 }

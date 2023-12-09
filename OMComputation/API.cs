@@ -40,13 +40,13 @@ public static class API
 			return "(" + (this.isInput ? "input " : "output ") + this.ID + ")";
 		}
 	}
-	public struct IODefinition
+	public struct IOGlyph
 	{
 		public readonly IOIndex ioIndex;
 		public readonly HashSet<HexIndex> footprint;
 		public readonly Molecule profile;
 
-		public IODefinition(IOIndex ioIndex, HashSet<HexIndex> footprint, Molecule profile)
+		public IOGlyph(IOIndex ioIndex, HashSet<HexIndex> footprint, Molecule profile)
 		{
 			this.ioIndex = ioIndex;
 			this.footprint = footprint;
@@ -68,7 +68,7 @@ public static class API
 
 
 
-	public static void AddComputationPuzzleDefinition(string puzzleID, List<IODefinition> ioDefs, ComputationManagerMaker managerMaker)
+	public static void AddComputationPuzzleDefinition(string puzzleID, List<IOGlyph> ioDefs, ComputationManagerMaker managerMaker)
 	{
 		if (!computationPuzzleDefinitions.ContainsKey(puzzleID))
 		{
@@ -265,7 +265,7 @@ public static class API
 		// constructors
 		public ComputationPuzzleDefinition(
 			string puzzleID,
-			List<IODefinition> ioDefs,
+			List<IOGlyph> ioDefs,
 			ComputationManagerMaker managerMaker)
 		{
 			this.puzzleID = puzzleID;
