@@ -3,9 +3,11 @@ using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using MonoMod.Utils;
 using Quintessential;
+using Quintessential.Serialization;
 using Quintessential.Settings;
 using SDL2;
 using System;
+using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
@@ -37,7 +39,11 @@ public class MainClass : QuintessentialMod
 
 		DebugLoadPuzzleContent();
 
-
+		// read-in computation.yamls and add to dictionary
+		foreach (var mod in QuintessentialLoader.Mods)
+		{
+			LoadComputationDefinitionsFromMod(mod);
+		}
 	}
 	public override void Unload()
 	{
@@ -46,8 +52,24 @@ public class MainClass : QuintessentialMod
 	public override void PostLoad()
 	{
 		//
+	}
 
-		// read-in computation.yamls and add to dictionary
+	private void LoadComputationDefinitionsFromMod(ModMeta mod)
+	{
+		// based somewhat on LoadModCampaigns from Quintessential/QuintessentialLoader.cs
+		if (mod == QuintessentialLoader.QuintessentialModMeta) return;
+		var puzzles = Path.Combine(mod.PathDirectory, "Puzzles");
+		if (!Directory.Exists(puzzles)) return;
+
+		foreach (var item in Directory.GetFiles(puzzles))
+		{
+			string filename = Path.GetFileName(item);
+			if (!filename.EndsWith(".computation.yaml")) continue;
+
+			using StreamReader reader = new(item);
+			var model = YamlHelper.Deserializer.Deserialize<ComputationPuzzleDefinitionModel>(reader);
+			model.AddDefinitionFromModel(item);
+		}
 	}
 
 
@@ -75,9 +97,9 @@ public class MainClass : QuintessentialMod
 
 	public static void DebugLoadPuzzleContent()
 	{
-		var firstInput = new API.IOIndex(0, true);
-		var firstOutput = new API.IOIndex(0, false);
-		var secondOutput = new API.IOIndex(1, false);
+		var firstInput = API.IOIndex.Input(0);
+		var firstOutput = API.IOIndex.Output(0);
+		var secondOutput = API.IOIndex.Output(1);
 
 
 
@@ -99,7 +121,7 @@ public class MainClass : QuintessentialMod
 
 
 		API.AddComputationPuzzleDefinition("computation-example-1", new List<API.IOGlyph>() { def1 }, (_) => new ComputationManagerTest1());
-
+		/*
 		API.AddSimpleComputationPuzzleDefinition(
 			"computation-example-2",
 			new Dictionary<API.IOIndex, List<Molecule>>()
@@ -122,7 +144,7 @@ public class MainClass : QuintessentialMod
 				},
 			}
 		);
-
+		*/
 
 
 

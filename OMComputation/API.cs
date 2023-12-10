@@ -1,14 +1,16 @@
-﻿using Mono.Cecil.Cil;
-using MonoMod.Cil;
-using MonoMod.RuntimeDetour;
+﻿//using Mono.Cecil.Cil;
+//using MonoMod.Cil;
+//using MonoMod.RuntimeDetour;
 using MonoMod.Utils;
 using Quintessential;
-using Quintessential.Settings;
-using SDL2;
+//using Quintessential.Serialization;
+//using Quintessential.Settings;
+//using SDL2;
 using System;
+//using System.IO;
 using System.Linq;
 using System.Collections.Generic;
-using System.Reflection;
+//using System.Reflection;
 
 namespace OMComputation;
 
@@ -27,18 +29,22 @@ public static class API
 	public delegate ComputationManagerBase ComputationManagerMaker(string puzzleID);
 	public struct IOIndex
 	{
-		public readonly int ID;
 		public readonly bool isInput;
+		public readonly int ID;
 
-		public IOIndex(int ID, bool isInput)
+		public IOIndex(bool isInput, int ID)
 		{
 			this.ID = ID;
 			this.isInput = isInput;
 		}
+		public static IOIndex Input(int ID) => new IOIndex(true, ID);
+		public static IOIndex Output(int ID) => new IOIndex(false, ID);
 		public override string ToString()
 		{
 			return "(" + (this.isInput ? "input " : "output ") + this.ID + ")";
 		}
+
+
 	}
 	public struct IOGlyph // defines the shape of a computation IO part
 	{
@@ -194,7 +200,7 @@ public static class API
 	public static bool IOPartIsComputationIO(Solution solution, int index, bool isInput)
 	{
 		var puzzleID = solution.method_1934().field_2766;
-		if (computationPuzzleDefinitions.ContainsKey(puzzleID)) return computationPuzzleDefinitions[puzzleID].IOPartIsComputationIO(new IOIndex(index, isInput));
+		if (computationPuzzleDefinitions.ContainsKey(puzzleID)) return computationPuzzleDefinitions[puzzleID].IOPartIsComputationIO(new IOIndex(isInput, index));
 		return false;
 	}
 
@@ -202,7 +208,7 @@ public static class API
 	public static HashSet<HexIndex> GetFootprint(Solution solution, int index, bool isInput)
 	{
 		var puzzleID = solution.method_1934().field_2766;
-		if (computationPuzzleDefinitions.ContainsKey(puzzleID)) return computationPuzzleDefinitions[puzzleID].GetFootprint(new IOIndex(index, isInput));
+		if (computationPuzzleDefinitions.ContainsKey(puzzleID)) return computationPuzzleDefinitions[puzzleID].GetFootprint(new IOIndex(isInput, index));
 		throw new Exception(invalidPuzzleID(puzzleID));
 	}
 
@@ -210,7 +216,7 @@ public static class API
 	public static Molecule GetProfile(Solution solution, int index, bool isInput)
 	{
 		var puzzleID = solution.method_1934().field_2766;
-		if (computationPuzzleDefinitions.ContainsKey(puzzleID)) return computationPuzzleDefinitions[puzzleID].GetProfile(new IOIndex(index, isInput));
+		if (computationPuzzleDefinitions.ContainsKey(puzzleID)) return computationPuzzleDefinitions[puzzleID].GetProfile(new IOIndex(isInput, index));
 		throw new Exception(invalidPuzzleID(puzzleID));
 	}
 
@@ -224,12 +230,12 @@ public static class API
 		var puzzleID = seb.method_502().method_1934().field_2766;
 		var compDefinition = computationPuzzleDefinitions[puzzleID];
 		var manager = compDefinition.createComputationManager();
-		return manager.CurrentMolecule(new IOIndex(index, isInput));
+		return manager.CurrentMolecule(new IOIndex(isInput, index));
 	}
 	public static Molecule GetCurrentMolecule(Sim sim, Part part) => GetCurrentMolecule(sim, part.method_1167(), PartIsInput(part));
 	public static Molecule GetCurrentMolecule(Sim sim, int index, bool isInput)
 	{
-		var ioIndex = new IOIndex(index, isInput);
+		var ioIndex = new IOIndex(isInput, index);
 		var manager = fetchManagerFromSim(sim);
 		return manager.CurrentMolecule(ioIndex);
 	}
@@ -240,7 +246,7 @@ public static class API
 	}
 	public static Molecule GetPreviousMolecule(Sim sim, Part part)
 	{
-		var ioIndex = new IOIndex(part.method_1167(), PartIsInput(part));
+		var ioIndex = new IOIndex(PartIsInput(part), part.method_1167());
 		var manager = fetchManagerFromSim(sim);
 		return manager.previousMolecule(ioIndex);
 	}
@@ -250,7 +256,7 @@ public static class API
 	public static void NextMolecule(Sim sim, Part part) => NextMolecule(sim, part.method_1167(), PartIsInput(part));
 	public static void NextMolecule(Sim sim, int index, bool isInput)
 	{
-		var ioIndex = new IOIndex(index, isInput);
+		var ioIndex = new IOIndex(isInput, index);
 		var manager = fetchManagerFromSim(sim);
 		manager.GoToNextMolecule(ioIndex);
 	}

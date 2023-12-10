@@ -3,9 +3,11 @@
 using MonoMod.RuntimeDetour;
 using MonoMod.Utils;
 using Quintessential;
+//using Quintessential.Serialization;
 //using Quintessential.Settings;
 //using SDL2;
 using System;
+//using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 //using System.Reflection;
