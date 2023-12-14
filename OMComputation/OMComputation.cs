@@ -119,9 +119,11 @@ public class MainClass : QuintessentialMod
 
 		var def3 = new API.IOGlyph(firstOutput, singleAtomMolecule, API.GetFootprintFromMolecule(saltLeft));
 
-
+		
 		API.AddComputationPuzzleDefinition("computation-example-1", new List<API.IOGlyph>() { def1 }, (_) => new ComputationManagerTest1());
-		/*
+		
+
+		
 		API.AddSimpleComputationPuzzleDefinition(
 			"computation-example-2",
 			new Dictionary<API.IOIndex, List<Molecule>>()
@@ -144,11 +146,11 @@ public class MainClass : QuintessentialMod
 				},
 			}
 		);
-		*/
+		
 
 
 
-
+		
 		API.AddSimpleComputationPuzzleDefinition(
 			"computation-example-3",
 			new List<Dictionary<API.IOIndex, List<Molecule>>>
@@ -160,7 +162,7 @@ public class MainClass : QuintessentialMod
 			}
 		);
 
-
+		
 		API.AddSimpleComputationPuzzleDefinition(
 			"computation-example-4",
 			new List<Dictionary<API.IOIndex, List<Molecule>>>
@@ -222,5 +224,6 @@ public class MainClass : QuintessentialMod
 			},
 			123456789 // seed for the random-number generator
 		);
+		
 	}
 }
