@@ -33,6 +33,8 @@ public static class ComputationPart
 
 	private static PartType internal_computationIO;
 
+	public static bool enableComputationMode = true;
+
 	//
 	//
 	// TO-DO (?): change "field_1530" display for inputs/outputs: class_134.method_253("A computation input for this alchemical machine.", string.Empty)
@@ -151,7 +153,7 @@ public static class ComputationPart
 	private delegate HashSet<HexIndex> orig_SolutionEditorScreen_method_2131(Solution param_5731, Part param_5732);
 	private static HashSet<HexIndex> SES_GetHexesForDrawingThePartHandle(orig_SolutionEditorScreen_method_2131 orig, Solution solution, Part part)
 	{
-		return API.PartIsComputationIO(solution, part) ? API.GetComputationFootprint(solution, part) : orig(solution, part);
+		return (enableComputationMode && API.PartIsComputationIO(solution, part)) ? API.GetComputationFootprint(solution, part) : orig(solution, part);
 	}
 
 	////////////////////////////////////////////////////////////
@@ -177,6 +179,12 @@ public static class ComputationPart
 
 	private static void Sim_InputsWrapper(Action<Sim> orig, Sim sim, Action<Sim, Part, Molecule> action)
 	{
+		if (!enableComputationMode)
+		{
+			orig(sim);
+			return;
+		}
+
 		Dictionary<Part, PartType> computationInputs = new();
 		var partList = API.getPartList(sim);
 
@@ -213,6 +221,12 @@ public static class ComputationPart
 	private delegate void orig_Sim_method_1832(Sim sim_self, bool isConsumptionStep);
 	private static void Sim_AcceptComputationOutputs(orig_Sim_method_1832 orig, Sim sim_self, bool isConsumptionStep)
 	{
+		if (!enableComputationMode)
+		{
+			orig(sim_self, isConsumptionStep);
+			return;
+		}
+
 		PuzzleInputOutput[] puzzleOutputs = API.getPuzzle(sim_self).field_2771;
 		var computationOutputs = API.getPartList(sim_self).Where(x => API.PartIsOutput(x) && API.PartIsComputationIO(sim_self, x));
 
@@ -248,7 +262,7 @@ public static class ComputationPart
 	private delegate void orig_SolutionEditorBase_method_1994(SolutionEditorBase seb_self, Part part, Vector2 offset, bool flag, bool viewPreviousBoardState);
 	private static void SEB_DrawPartMolecules(orig_SolutionEditorBase_method_1994 orig, SolutionEditorBase seb_self, Part part, Vector2 offset, bool flag, bool viewPreviousBoardState)
 	{
-		if (!API.PartIsComputationIO(seb_self, part))
+		if (!enableComputationMode || !API.PartIsComputationIO(seb_self, part))
 		{
 			orig(seb_self, part, offset, flag, viewPreviousBoardState);
 			return;
@@ -299,7 +313,7 @@ public static class ComputationPart
 	private delegate void orig_SolutionEditorBase_method_1996(SolutionEditorBase seb_self, Part part, Vector2 offset);
 	private static void SEB_DrawPartGlyph(orig_SolutionEditorBase_method_1996 orig, SolutionEditorBase seb_self, Part part, Vector2 offset)
 	{
-		if (!API.PartIsComputationIO(seb_self, part))
+		if (!enableComputationMode || !API.PartIsComputationIO(seb_self, part))
 		{
 			orig(seb_self, part, offset);
 			return;
@@ -321,7 +335,11 @@ public static class ComputationPart
 		HexIndex shift,
 		HexRotation rotate)
 	{
-		if (API.PartIsComputationIO(solution, part_self))
+		if (!enableComputationMode || !API.PartIsComputationIO(solution, part_self))
+		{
+			return orig(part_self, solution, enum137, shift, rotate);
+		}
+		else
 		{
 			HashSet<HexIndex> ret = new HashSet<HexIndex>();
 			foreach (HexIndex hexIndex in API.GetComputationFootprint(solution, part_self))
@@ -330,32 +348,28 @@ public static class ComputationPart
 			}
 			return ret;
 		}
-		else
-		{
-			return orig(part_self, solution, enum137, shift, rotate);
-		}
 	}
 
 	////////////////////////////////////////////////////////////
 	private static void PartGlowDrawing(On.SolutionEditorBase.orig_method_1997 orig, SolutionEditorBase seb_self, Part part, Vector2 offset, float alpha)
 	{
-		if (API.PartIsComputationIO(seb_self, part))
+		if (!enableComputationMode || !API.PartIsComputationIO(seb_self, part))
+		{
+			orig(seb_self, part, offset, alpha);
+		}
+		else
 		{
 			if (alpha == 0f) return;
 			Color color = Color.White.WithAlpha(alpha);
 			class_236 class236 = seb_self.method_1989(part, offset);
 			MainClass.PrivateMethod<SolutionEditorBase>("method_2017").Invoke(seb_self, new object[] { class236, API.GetComputationFootprint(seb_self, part), color });
 		}
-		else
-		{
-			orig(seb_self, part, offset, alpha);
-		}
 	}
 
 	////////////////////////////////////////////////////////////
 	private static void PartStrokeDrawing(On.SolutionEditorBase.orig_method_1998 orig, SolutionEditorBase seb_self, Part part, Vector2 offset, float alpha)
 	{
-		if (API.PartIsComputationIO(seb_self, part)) return;
+		if (enableComputationMode && API.PartIsComputationIO(seb_self, part)) return;
 
 		orig(seb_self, part, offset, alpha);
 	}
@@ -368,6 +382,7 @@ public static class ComputationPart
 		List<PartTypeForToolbar> list)
 	{
 		orig(class428_self, trayName, list);
+		if (!enableComputationMode) return;
 
 		var reagents = class_134.method_253("Reagents", string.Empty);
 		var products = class_134.method_253("Products", string.Empty);
@@ -451,6 +466,12 @@ public static class ComputationPart
 	////////////////////////////////////////////////////////////
 	private static void FixDrawingOfComputationIOInThePartsTray(On.SolutionEditorPartsPanel.orig_method_221 orig, SolutionEditorPartsPanel sepp_self, float f)
 	{
+		if (!enableComputationMode)
+		{
+			orig(sepp_self, f);
+			return;
+		}
+
 		var solutionEditorScreen = new DynamicData(sepp_self).Get<SolutionEditorScreen>("field_2007");
 		var solution = API.getSolution(solutionEditorScreen);
 		var puzzle = API.getPuzzle(solution);

@@ -25,10 +25,38 @@ namespace OMComputation;
 public class MainClass : QuintessentialMod
 {
 	public static MethodInfo PrivateMethod<T>(string method) => typeof(T).GetMethod(method, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+	public override Type SettingsType => typeof(MySettings);
+	public static QuintessentialMod MainClassAsMod;
+	public class MySettings
+	{
+		public static MySettings Instance => MainClassAsMod.Settings as MySettings;
+
+		[SettingsLabel("Enable Computation Mode")]
+		public bool enableComputationMode = false;
+		[SettingsLabel("")]
+		public DisplaySettings displayEditingSettings = new();
+		public class DisplaySettings : SettingsGroup
+		{
+			public override bool Enabled => Instance.enableComputationMode;
+
+			//[SettingsLabel("Show the origin on the navigation map.")]
+			//public bool showCritelliOnMap = false;
+			//[SettingsLabel("Open Map")]
+			//public Keybinding KeyShowMap = new() { Key = "M" };
+		}
+	}
+	public override void ApplySettings()
+	{
+		base.ApplySettings();
+
+		var SET = (MySettings)Settings;
+		ComputationPart.enableComputationMode = SET.enableComputationMode;
+	}
 
 	public override void Load()
 	{
-		//
+		MainClassAsMod = this;
+		Settings = new MySettings();
 	}
 	public override void LoadPuzzleContent()
 	{
@@ -123,7 +151,7 @@ public class MainClass : QuintessentialMod
 		API.AddComputationPuzzleDefinition("computation-example-1", new List<API.IOGlyph>() { def1 }, (_) => new ComputationManagerTest1());
 		
 
-		
+		/*
 		API.AddSimpleComputationPuzzleDefinition(
 			"computation-example-2",
 			new Dictionary<API.IOIndex, List<Molecule>>()
@@ -146,7 +174,7 @@ public class MainClass : QuintessentialMod
 				},
 			}
 		);
-		
+		*/
 
 
 
@@ -224,6 +252,5 @@ public class MainClass : QuintessentialMod
 			},
 			123456789 // seed for the random-number generator
 		);
-		
 	}
 }
