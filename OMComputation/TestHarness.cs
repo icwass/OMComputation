@@ -24,7 +24,24 @@ namespace OMComputation;
 //using Texture = class_256;
 public class TestHarness
 {
-	//
+	private int currentTestCase = 0;
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// public functions
+	public static void LoadPuzzleContent()
+	{
+		//string path = "computation/textures/parts/";
+
+		
+	}
+	public static void LoadHooking()
+	{
+		//
+	}
+	public static void UnloadHooking()
+	{
+		//
+	}
 
 
 

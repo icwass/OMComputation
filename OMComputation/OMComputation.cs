@@ -181,6 +181,7 @@ public class MainClass : QuintessentialMod
 
 		internalAPI.AddSimpleComputationPuzzleDefinition(
 			"computation-example-3",
+			new Dictionary<API.IOIndex, List<Molecule>>(),
 			new List<Dictionary<API.IOIndex, List<Molecule>>>
 			{
 				new Dictionary<API.IOIndex, List<Molecule>>()
@@ -193,6 +194,7 @@ public class MainClass : QuintessentialMod
 
 		internalAPI.AddSimpleComputationPuzzleDefinition(
 			"computation-example-4",
+			new Dictionary<API.IOIndex, List<Molecule>>(),
 			new List<Dictionary<API.IOIndex, List<Molecule>>>
 			{
 				new Dictionary<API.IOIndex, List<Molecule>>()

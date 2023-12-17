@@ -30,56 +30,7 @@ using ComputationManagerMaker = API.ComputationManagerMaker;
 
 public static partial class internalAPI
 {
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// public API functions - computation-data getters
-	public static HashSet<HexIndex> GetComputationFootprint(SolutionEditorBase seb, Part part) => GetComputationFootprint(vanillaAPI.getSolution(seb), new IOIndex(part));
-	public static HashSet<HexIndex> GetComputationFootprint(Solution solution, Part part) => GetComputationFootprint(solution, new IOIndex(part));
-	public static HashSet<HexIndex> GetComputationFootprint(Solution solution, IOIndex ioIndex)
-	{
-		var puzzleID = vanillaAPI.getPuzzleID(solution);
-		throwErrorOnInvalidPuzzleID(puzzleID);
-		return fetchComputationPuzzleDefinition(puzzleID).GetFootprint(ioIndex);
-	}
-	////////////////////////////////////////////////////////////
-	public static Molecule GetComputationProfile(Solution solution, Part part) => GetComputationProfile(solution, new IOIndex(part));
-	public static Molecule GetComputationProfile(Solution solution, IOIndex ioIndex)
-	{
-		var puzzleID = vanillaAPI.getPuzzleID(solution);
-		throwErrorOnInvalidPuzzleID(puzzleID);
-		return fetchComputationPuzzleDefinition(puzzleID).GetProfile(ioIndex);
-	}
-	////////////////////////////////////////////////////////////
-	public static Molecule GetComputationMolecule_Current(Sim sim, Part part) => GetComputationMolecule_Current(sim, new IOIndex(part));
-	public static Molecule GetComputationMolecule_Current(Sim sim, IOIndex ioIndex) => fetchManagerFromSim(sim).CurrentMolecule(ioIndex);
-	public static Molecule GetComputationMolecule_Current(SolutionEditorBase seb, Part part) => GetComputationMolecule_Current(seb, new IOIndex(part));
-	public static Molecule GetComputationMolecule_Current(SolutionEditorBase seb, IOIndex ioIndex)
-	{
-		Sim sim = getSimFromSeb(seb);
-		if (sim != null) return GetComputationMolecule_Current(sim, ioIndex);
-
-		var compDefinition = fetchComputationPuzzleDefinition(vanillaAPI.getPuzzleID(seb));
-		return compDefinition.createComputationManager().CurrentMolecule(ioIndex);
-	}
-	////////////////////////////////////////////////////////////
-	public static Molecule GetComputationMolecule_Previous(SolutionEditorBase seb, Part part)
-	{
-		Sim sim = getSimFromSeb(seb);
-		return sim == null ? GetComputationMolecule_Current(seb, part) : GetComputationMolecule_Previous(sim, part);
-	}
-	public static Molecule GetComputationMolecule_Previous(Sim sim, Part part)
-	{
-		var ioIndex = new IOIndex(vanillaAPI.PartIsInput(part), vanillaAPI.PartIONumber(part));
-		return fetchManagerFromSim(sim).previousMolecule(ioIndex);
-	}
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// public functions with side effects
-	public static void AdvanceToNextComputationMolecule(Sim sim, Part part) => AdvanceToNextComputationMolecule(sim, new IOIndex(part));
-	public static void AdvanceToNextComputationMolecule(Sim sim, IOIndex ioIndex) => fetchManagerFromSim(sim).GoToNextMolecule(ioIndex);
-
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// public API functions - the big boys
+	// public API functions
 	public static void AddComputationPuzzleDefinition(string puzzleID, List<IOGlyph> ioGlyphs, ComputationManagerMaker managerMaker)
 	{
 		if (!PuzzleIsComputation(puzzleID))
@@ -126,11 +77,47 @@ public static partial class internalAPI
 		AddComputationPuzzleDefinition(puzzleID, ioGlyphs, ComputationManagerSimple.makerConstructor(initialMolecules, rulebook, seed));
 	}
 
-	public static void AddSimpleComputationPuzzleDefinition(
-		string puzzleID,
-		List<Dictionary<IOIndex, List<Molecule>>> rulebook,
-		int seed = 0)
+	////////////////////////////////////////////////////////////
+	// helper classes
+	public class ComputationManagerSimple : ComputationManagerBase
 	{
-		AddSimpleComputationPuzzleDefinition(puzzleID, new Dictionary<IOIndex, List<Molecule>>(), rulebook, seed);
+		List<Dictionary<IOIndex, List<Molecule>>> rulebook;
+		Random random;
+
+		public override void AddMoleculesToQueues(IOIndex _)
+		{
+			int r = random.Next(rulebook.Count);
+			Dictionary<IOIndex, List<Molecule>> rule = rulebook[r];
+			addMoleculesFromRule(rule);
+		}
+
+		private void addMoleculesFromRule(Dictionary<IOIndex, List<Molecule>> rule)
+		{
+			foreach (var kvp in rule)
+			{
+				foreach (var molecule in kvp.Value)
+				{
+					AddMoleculeToQueue(kvp.Key, molecule);
+				}
+			}
+		}
+
+		private ComputationManagerSimple(
+			Dictionary<IOIndex, List<Molecule>> initialMolecules,
+			List<Dictionary<IOIndex, List<Molecule>>> rulebook,
+			int seed)
+		{
+			this.rulebook = rulebook;
+			this.random = new(seed);
+			addMoleculesFromRule(initialMolecules);
+		}
+
+		public static ComputationManagerMaker makerConstructor(
+			Dictionary<IOIndex, List<Molecule>> initialMolecules,
+			List<Dictionary<IOIndex, List<Molecule>>> rulebook,
+			int seed)
+		{
+			return (_) => new ComputationManagerSimple(initialMolecules, rulebook, seed);
+		}
 	}
 }

@@ -23,11 +23,6 @@ namespace OMComputation;
 //using PartTypes = class_191;
 //using Texture = class_256;
 
-using IOIndex = API.IOIndex;
-using IOGlyph = API.IOGlyph;
-//using ComputationManagerBase = API.ComputationManagerBase;
-using ComputationManagerMaker = API.ComputationManagerMaker;
-
 public static class API
 {
 	// public types and public data
@@ -119,8 +114,6 @@ public static class API
 
 
 
-
-
 	/// <summary>
 	/// A function that generates a ComputationManager.
 	/// </summary>
@@ -128,5 +121,10 @@ public static class API
 	// <param name="position">The position of the part.</param>
 	// <param name="editor">The solution editor that the part is being displayed in.</param>
 	// <param name="helper">An object containing functions for rendering images, at different positions/rotations and lightmaps.</param>////////////////////////////////////////////////////////////
+	public static void AddComputationPuzzleDefinition(string puzzleID, List<IOGlyph> ioGlyphs, ComputationManagerMaker managerMaker)
+	{
+		internalAPI.AddComputationPuzzleDefinition(puzzleID, ioGlyphs, managerMaker);
+	}
+
 
 }
