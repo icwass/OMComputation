@@ -95,6 +95,6 @@ public class ComputationPuzzleDefinitionModel
 			actualSetPool.Add(actualProblemSet);
 		}
 
-		API.AddSimpleComputationPuzzleDefinition(PuzzleID, actualInitialSet, actualSetPool, Seed);
+		internalAPI.AddSimpleComputationPuzzleDefinition(PuzzleID, actualInitialSet, actualSetPool, Seed);
 	}
 }

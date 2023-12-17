@@ -143,13 +143,13 @@ public class MainClass : QuintessentialMod
 
 		var singleAtomMolecule = Molecule.method_1121(salt);
 
-		var def1 = new API.IOGlyph(firstInput, API.GetProfileFromMolecules(saltMolecules));
+		var def1 = new API.IOGlyph(firstInput, internalAPI.GetProfileFromMolecules(saltMolecules));
 
-		var def3 = new API.IOGlyph(firstOutput, singleAtomMolecule, API.GetFootprintFromMolecule(saltLeft));
+		var def3 = new API.IOGlyph(firstOutput, singleAtomMolecule, internalAPI.GetFootprintFromMolecule(saltLeft));
 
-		
-		API.AddComputationPuzzleDefinition("computation-example-1", new List<API.IOGlyph>() { def1 }, (_) => new ComputationManagerTest1());
-		
+
+		internalAPI.AddComputationPuzzleDefinition("computation-example-1", new List<API.IOGlyph>() { def1 }, (_) => new ComputationManagerTest1());
+
 
 		/*
 		API.AddSimpleComputationPuzzleDefinition(
@@ -178,8 +178,8 @@ public class MainClass : QuintessentialMod
 
 
 
-		
-		API.AddSimpleComputationPuzzleDefinition(
+
+		internalAPI.AddSimpleComputationPuzzleDefinition(
 			"computation-example-3",
 			new List<Dictionary<API.IOIndex, List<Molecule>>>
 			{
@@ -190,8 +190,8 @@ public class MainClass : QuintessentialMod
 			}
 		);
 
-		
-		API.AddSimpleComputationPuzzleDefinition(
+
+		internalAPI.AddSimpleComputationPuzzleDefinition(
 			"computation-example-4",
 			new List<Dictionary<API.IOIndex, List<Molecule>>>
 			{

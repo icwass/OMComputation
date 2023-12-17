@@ -1,16 +1,16 @@
-﻿//using Mono.Cecil.Cil;
-//using MonoMod.Cil;
+﻿using Mono.Cecil.Cil;
+using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using MonoMod.Utils;
 using Quintessential;
-//using Quintessential.Serialization;
-//using Quintessential.Settings;
-//using SDL2;
+using Quintessential.Serialization;
+using Quintessential.Settings;
+using SDL2;
 using System;
-//using System.IO;
+using System.IO;
 using System.Linq;
 using System.Collections.Generic;
-//using System.Reflection;
+using System.Reflection;
 
 namespace OMComputation;
 
@@ -153,7 +153,7 @@ public static class ComputationPart
 	private delegate HashSet<HexIndex> orig_SolutionEditorScreen_method_2131(Solution param_5731, Part param_5732);
 	private static HashSet<HexIndex> SES_GetHexesForDrawingThePartHandle(orig_SolutionEditorScreen_method_2131 orig, Solution solution, Part part)
 	{
-		return (enableComputationMode && API.PartIsComputationIO(solution, part)) ? API.GetComputationFootprint(solution, part) : orig(solution, part);
+		return (enableComputationMode && internalAPI.PartIsComputationIO(solution, part)) ? internalAPI.GetComputationFootprint(solution, part) : orig(solution, part);
 	}
 
 	////////////////////////////////////////////////////////////
@@ -164,7 +164,7 @@ public static class ComputationPart
 		{
 			var molecules = sim.field_3823;
 			molecules.Add(reagent);
-			API.AdvanceToNextComputationMolecule(sim, input);
+			internalAPI.AdvanceToNextComputationMolecule(sim, input);
 		});
 	}
 
@@ -186,11 +186,11 @@ public static class ComputationPart
 		}
 
 		Dictionary<Part, PartType> computationInputs = new();
-		var partList = API.getPartList(sim);
+		var partList = vanillaAPI.getPartList(sim);
 
-		foreach (var input in partList.Where(x => API.PartIsInput(x) && API.PartIsComputationIO(sim, x)))
+		foreach (var input in partList.Where(x => vanillaAPI.PartIsInput(x) && internalAPI.PartIsComputationIO(sim, x)))
 		{
-			computationInputs.Add(input, API.getPartType(input));
+			computationInputs.Add(input, vanillaAPI.getPartType(input));
 		}
 
 		// get molecule-position data
@@ -199,17 +199,17 @@ public static class ComputationPart
 		foreach (Molecule molecule in molecules) hexIndexSet.UnionWith(molecule.method_1100().Keys);
 
 		// don't let computation inputs behave the usual way
-		foreach (Part part in computationInputs.Keys) API.overwriteField(part, "field_2691", internal_computationIO);
+		foreach (Part part in computationInputs.Keys) vanillaAPI.overwriteField(part, "field_2691", internal_computationIO);
 
 		orig(sim);
 
 		// instead, do something different
 		foreach (Part input in computationInputs.Keys)
 		{
-			API.overwriteField(input, "field_2691", computationInputs[input]);
+			vanillaAPI.overwriteField(input, "field_2691", computationInputs[input]);
 			HexIndex shift = input.method_1161();
 			HexRotation rotate = input.method_1163();
-			Molecule reagent = API.GetComputationMolecule_Current(sim, input).method_1115(rotate).method_1117(shift);
+			Molecule reagent = internalAPI.GetComputationMolecule_Current(sim, input).method_1115(rotate).method_1117(shift);
 
 			bool inputIsBlocked = (bool)MainClass.PrivateMethod<Sim>("method_1837").Invoke(sim, new object[] { reagent, hexIndexSet });
 
@@ -227,8 +227,8 @@ public static class ComputationPart
 			return;
 		}
 
-		PuzzleInputOutput[] puzzleOutputs = API.getPuzzle(sim_self).field_2771;
-		var computationOutputs = API.getPartList(sim_self).Where(x => API.PartIsOutput(x) && API.PartIsComputationIO(sim_self, x));
+		PuzzleInputOutput[] puzzleOutputs = vanillaAPI.getPuzzle(sim_self).field_2771;
+		var computationOutputs = vanillaAPI.getPartList(sim_self).Where(x => vanillaAPI.PartIsOutput(x) && internalAPI.PartIsComputationIO(sim_self, x));
 
 		// record what the puzzle outputs are
 		Molecule[] originalOutputs = new Molecule[puzzleOutputs.Length];
@@ -239,8 +239,8 @@ public static class ComputationPart
 		// switcheroo molecule outputs in the puzzle file
 		foreach (var computationOutput in computationOutputs)
 		{
-			var product = API.GetComputationMolecule_Current(sim_self, computationOutput);
-			puzzleOutputs[API.PartIONumber(computationOutput)].field_2813 = product;
+			var product = internalAPI.GetComputationMolecule_Current(sim_self, computationOutput);
+			puzzleOutputs[vanillaAPI.PartIONumber(computationOutput)].field_2813 = product;
 		}
 
 		orig(sim_self, isConsumptionStep);
@@ -254,7 +254,7 @@ public static class ComputationPart
 		foreach (var computationOutput in computationOutputs)
 		{
 			var partSimState = sim_self.field_3821[computationOutput];
-			if (partSimState.field_2743) API.AdvanceToNextComputationMolecule(sim_self, computationOutput);
+			if (partSimState.field_2743) internalAPI.AdvanceToNextComputationMolecule(sim_self, computationOutput);
 		}
 	}
 
@@ -262,7 +262,7 @@ public static class ComputationPart
 	private delegate void orig_SolutionEditorBase_method_1994(SolutionEditorBase seb_self, Part part, Vector2 offset, bool flag, bool viewPreviousBoardState);
 	private static void SEB_DrawPartMolecules(orig_SolutionEditorBase_method_1994 orig, SolutionEditorBase seb_self, Part part, Vector2 offset, bool flag, bool viewPreviousBoardState)
 	{
-		if (!enableComputationMode || !API.PartIsComputationIO(seb_self, part))
+		if (!enableComputationMode || !internalAPI.PartIsComputationIO(seb_self, part))
 		{
 			orig(seb_self, part, offset, flag, viewPreviousBoardState);
 			return;
@@ -270,8 +270,8 @@ public static class ComputationPart
 
 		PartSimState partSimState = seb_self.method_507().method_481(part);
 		bool partWasActivated = partSimState.field_2743;
-		Molecule molecule = API.GetComputationMolecule_Current(seb_self, part);
-		Molecule prevMolecule = API.GetComputationMolecule_Previous(seb_self, part);
+		Molecule molecule = internalAPI.GetComputationMolecule_Current(seb_self, part);
+		Molecule prevMolecule = internalAPI.GetComputationMolecule_Previous(seb_self, part);
 
 		class_236 class236 = seb_self.method_1989(part, offset);
 		void method925(float x, float y, float z, bool flg, bool prev = false)
@@ -279,7 +279,7 @@ public static class ComputationPart
 			Editor.method_925(prev ? prevMolecule : molecule, class236.field_1984, new HexIndex(0, 0), class236.field_1985, x, y, z, flg, null);
 		}
 
-		if (API.PartIsInput(part))
+		if (vanillaAPI.PartIsInput(part))
 		{
 			bool drawDuringEditing = seb_self.method_503() == enum_128.Stopped && !viewPreviousBoardState;
 			if (partWasActivated) method925(1f, seb_self.method_504(), 1f, false);
@@ -313,7 +313,7 @@ public static class ComputationPart
 	private delegate void orig_SolutionEditorBase_method_1996(SolutionEditorBase seb_self, Part part, Vector2 offset);
 	private static void SEB_DrawPartGlyph(orig_SolutionEditorBase_method_1996 orig, SolutionEditorBase seb_self, Part part, Vector2 offset)
 	{
-		if (!enableComputationMode || !API.PartIsComputationIO(seb_self, part))
+		if (!enableComputationMode || !internalAPI.PartIsComputationIO(seb_self, part))
 		{
 			orig(seb_self, part, offset);
 			return;
@@ -321,9 +321,9 @@ public static class ComputationPart
 
 		var class236 = seb_self.method_1989(part, offset);
 		var solution = seb_self.method_502();
-		var footprint = API.GetComputationFootprint(solution, part);
-		var profile = API.GetComputationProfile(solution, part);
-		computationMethod2000(class236, footprint, profile, Editor.method_922(), API.PartIsInput(part));
+		var footprint = internalAPI.GetComputationFootprint(solution, part);
+		var profile = internalAPI.GetComputationProfile(solution, part);
+		computationMethod2000(class236, footprint, profile, Editor.method_922(), vanillaAPI.PartIsInput(part));
 	}
 
 	////////////////////////////////////////////////////////////
@@ -335,14 +335,14 @@ public static class ComputationPart
 		HexIndex shift,
 		HexRotation rotate)
 	{
-		if (!enableComputationMode || !API.PartIsComputationIO(solution, part_self))
+		if (!enableComputationMode || !internalAPI.PartIsComputationIO(solution, part_self))
 		{
 			return orig(part_self, solution, enum137, shift, rotate);
 		}
 		else
 		{
 			HashSet<HexIndex> ret = new HashSet<HexIndex>();
-			foreach (HexIndex hexIndex in API.GetComputationFootprint(solution, part_self))
+			foreach (HexIndex hexIndex in internalAPI.GetComputationFootprint(solution, part_self))
 			{
 				ret.Add(hexIndex.Rotated(rotate) + shift);
 			}
@@ -353,7 +353,7 @@ public static class ComputationPart
 	////////////////////////////////////////////////////////////
 	private static void PartGlowDrawing(On.SolutionEditorBase.orig_method_1997 orig, SolutionEditorBase seb_self, Part part, Vector2 offset, float alpha)
 	{
-		if (!enableComputationMode || !API.PartIsComputationIO(seb_self, part))
+		if (!enableComputationMode || !internalAPI.PartIsComputationIO(seb_self, part))
 		{
 			orig(seb_self, part, offset, alpha);
 		}
@@ -362,14 +362,14 @@ public static class ComputationPart
 			if (alpha == 0f) return;
 			Color color = Color.White.WithAlpha(alpha);
 			class_236 class236 = seb_self.method_1989(part, offset);
-			MainClass.PrivateMethod<SolutionEditorBase>("method_2017").Invoke(seb_self, new object[] { class236, API.GetComputationFootprint(seb_self, part), color });
+			MainClass.PrivateMethod<SolutionEditorBase>("method_2017").Invoke(seb_self, new object[] { class236, internalAPI.GetComputationFootprint(seb_self, part), color });
 		}
 	}
 
 	////////////////////////////////////////////////////////////
 	private static void PartStrokeDrawing(On.SolutionEditorBase.orig_method_1998 orig, SolutionEditorBase seb_self, Part part, Vector2 offset, float alpha)
 	{
-		if (enableComputationMode && API.PartIsComputationIO(seb_self, part)) return;
+		if (enableComputationMode && internalAPI.PartIsComputationIO(seb_self, part)) return;
 
 		orig(seb_self, part, offset, alpha);
 	}
@@ -390,25 +390,25 @@ public static class ComputationPart
 
 		var solutionEditorPartsPanel = class428_self.field_3972;
 		var solutionEditorScreen = new DynamicData(solutionEditorPartsPanel).Get<SolutionEditorScreen>("field_2007");
-		var solution = API.getSolution(solutionEditorScreen);
+		var solution = vanillaAPI.getSolution(solutionEditorScreen);
 
 		// check if any inputs are computation io, and convert if needed
 		foreach (var partTypeForToolbar in list)
 		{
 			var partType = partTypeForToolbar.field_2745;
-			if (!API.PartTypeStandardIO(partType)) continue;
+			if (!vanillaAPI.PartTypeStandardIO(partType)) continue;
 
 			bool isInput = partType.field_1541;
 			int index = partTypeForToolbar.field_2746;
 			var ioIndex = new API.IOIndex(isInput, index);
-			bool isComputation = API.IOIndexIsComputationIO(solution, ioIndex);
+			bool isComputation = internalAPI.IOIndexIsComputationIO(solution, ioIndex);
 			if (!isComputation) continue;
 
 			//partTypeForToolbar.field_2745 = isInput ? ComputationInputPart : ComputationOutputPart;
 
-			var footprint = API.GetComputationFootprint(solution, ioIndex);
-			var profile = API.GetComputationProfile(solution, ioIndex);
-			var molecule = API.GetComputationMolecule_Current(solutionEditorScreen, ioIndex);
+			var footprint = internalAPI.GetComputationFootprint(solution, ioIndex);
+			var profile = internalAPI.GetComputationProfile(solution, ioIndex);
+			var molecule = internalAPI.GetComputationMolecule_Current(solutionEditorScreen, ioIndex);
 			Vector2 vector2 = new Vector2(215f, 1000f);
 
 			partTypeForToolbar.field_2750 = computationRenderHandle(footprint, profile, molecule, isInput, false, vector2);
@@ -473,16 +473,16 @@ public static class ComputationPart
 		}
 
 		var solutionEditorScreen = new DynamicData(sepp_self).Get<SolutionEditorScreen>("field_2007");
-		var solution = API.getSolution(solutionEditorScreen);
-		var puzzle = API.getPuzzle(solution);
+		var solution = vanillaAPI.getSolution(solutionEditorScreen);
+		var puzzle = vanillaAPI.getPuzzle(solution);
 		PuzzleInputOutput[] puzzleInputs = puzzle.field_2770;
 		PuzzleInputOutput[] puzzleOutputs = puzzle.field_2771;
 
 		var computationInputs = new List<int>();
 		var computationOutputs = new List<int>();
 
-		for (int i = 0; i < puzzleInputs.Length; i++) if (API.IOIndexIsComputationIO(solution, API.IOIndex.Input(i))) computationInputs.Add(i);
-		for (int i = 0; i < puzzleOutputs.Length; i++) if (API.IOIndexIsComputationIO(solution, API.IOIndex.Output(i))) computationOutputs.Add(i);
+		for (int i = 0; i < puzzleInputs.Length; i++) if (internalAPI.IOIndexIsComputationIO(solution, API.IOIndex.Input(i))) computationInputs.Add(i);
+		for (int i = 0; i < puzzleOutputs.Length; i++) if (internalAPI.IOIndexIsComputationIO(solution, API.IOIndex.Output(i))) computationOutputs.Add(i);
 
 		// record what the puzzle inputs and outputs are
 		Molecule[] originalInputs = new Molecule[puzzleInputs.Length];
@@ -491,8 +491,8 @@ public static class ComputationPart
 		for (int i = 0; i < puzzleOutputs.Length; i++) originalOutputs[i] = puzzleOutputs[i].field_2813;
 
 		// switcheroo molecules in the puzzle file
-		foreach (var n in computationInputs) puzzleInputs[n].field_2813 = footprintMolecule(API.GetComputationFootprint(solution, API.IOIndex.Input(n)));
-		foreach (var n in computationOutputs) puzzleOutputs[n].field_2813 = footprintMolecule(API.GetComputationFootprint(solution, API.IOIndex.Output(n)));
+		foreach (var n in computationInputs) puzzleInputs[n].field_2813 = footprintMolecule(internalAPI.GetComputationFootprint(solution, API.IOIndex.Input(n)));
+		foreach (var n in computationOutputs) puzzleOutputs[n].field_2813 = footprintMolecule(internalAPI.GetComputationFootprint(solution, API.IOIndex.Output(n)));
 
 		orig(sepp_self, f);
 
