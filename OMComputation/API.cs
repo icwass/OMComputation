@@ -66,41 +66,40 @@ public static class API
 	////////////////////////////////////////////////////////////
 	public abstract class ComputationManagerBase
 	{
-		string puzzleID = "";
+		public string puzzleID = "";
 		Dictionary<IOIndex, Queue<Molecule>> moleculeQueues = new();
 		Dictionary<IOIndex, Molecule> previousMolecules = new();
 
+		//////////
 		// functions that need to be defined when deriving a ComputationManager subclass
 		public abstract void AddMoleculesToQueues(IOIndex ioIndexThatNeedsMolecules);
 
 
+
+
+
+		//////////
 		// default functions
-		public void setPuzzleID(string puzzleID)
-		{
-			if (this.puzzleID == "") this.puzzleID = puzzleID;
-		}
 		private void ensureSafeDictionaryAccess(IOIndex ioIndex)
 		{
 			if (!moleculeQueues.ContainsKey(ioIndex)) moleculeQueues.Add(ioIndex, new Queue<Molecule>());
+			if (!previousMolecules.ContainsKey(ioIndex)) previousMolecules.Add(ioIndex, null);
 		}
-
 		public void AddMoleculeToQueue(IOIndex ioIndex, Molecule molecule)
 		{
 			ensureSafeDictionaryAccess(ioIndex);
-			if (!moleculeQueues.ContainsKey(ioIndex)) moleculeQueues.Add(ioIndex, new Queue<Molecule>());
 			moleculeQueues[ioIndex].Enqueue(molecule);
 		}
 		public void GoToNextMolecule(IOIndex ioIndex)
 		{
-			if (!previousMolecules.ContainsKey(ioIndex)) previousMolecules.Add(ioIndex, null);
 			ensureSafeDictionaryAccess(ioIndex);
-			previousMolecules[ioIndex] = this.CurrentMolecule(ioIndex);
+			previousMolecules[ioIndex] = CurrentMolecule(ioIndex);
 			moleculeQueues[ioIndex].Dequeue();
 		}
 		public Molecule previousMolecule(IOIndex ioIndex)
 		{
-			if (!previousMolecules.ContainsKey(ioIndex)) previousMolecules.Add(ioIndex, null);
-			if (previousMolecules[ioIndex] == null) return CurrentMolecule(ioIndex);
+			ensureSafeDictionaryAccess(ioIndex);
+			if (previousMolecules[ioIndex] == null) previousMolecules[ioIndex] = CurrentMolecule(ioIndex);
 			return previousMolecules[ioIndex];
 		}
 		public Molecule CurrentMolecule(IOIndex ioIndex)

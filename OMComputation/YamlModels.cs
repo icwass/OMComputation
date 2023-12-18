@@ -30,19 +30,62 @@ public class ComputationIOPacketModel
 	public List<string> Molecules;
 }
 
-public class ComputationProblemSet
+public class ComputationProblemSetModel
 {
 	public List<ComputationIOPacketModel> Set;
+
+	public Dictionary<API.IOIndex, List<Molecule>> FromModel(Dictionary<string, Molecule> molDict, string puzzleID)
+	{
+		Dictionary<API.IOIndex, List<Molecule>> actualSet = new();
+
+		foreach (var packet in Set)
+		{
+			var index = new API.IOIndex(packet.IsInput, packet.ID);
+			if (actualSet.ContainsKey(index)) throw new Exception("[OMComputation] Duplicate key " + index.ToString() + " encountered in computation.yaml file for '" + puzzleID + "'");
+
+			List<Molecule> molList = new();
+			foreach (var molRef in packet.Molecules)
+			{
+				if (!molDict.ContainsKey(molRef)) throw new Exception("[OMComputation] Undefined molecule reference '" + molRef + "' used in computation.yaml file for '" + puzzleID + "'");
+				molList.Add(molDict[molRef]);
+			}
+
+			actualSet.Add(index, molList);
+		}
+
+		return actualSet;
+	}
+}
+
+public class ComputationTestCaseModel
+{
+	public int Seed = 0;
+	public ComputationProblemSetModel InitialSet;
+	public List<ComputationProblemSetModel> SetPool;
+
+	public Tuple<int, Dictionary<API.IOIndex, List<Molecule>>, List<Dictionary<API.IOIndex, List<Molecule>>>> FromModel(
+		Dictionary<string, Molecule> molDict,
+		string puzzleID
+	)
+	{
+		Dictionary<API.IOIndex, List<Molecule>> actualInitialSet = InitialSet.FromModel(molDict, puzzleID);
+		List<Dictionary<API.IOIndex, List<Molecule>>> actualSetPool = new();
+
+		foreach (var problemSet in SetPool)
+		{
+			actualSetPool.Add(problemSet.FromModel(molDict, puzzleID));
+		}
+
+		return Tuple.Create(Seed, actualInitialSet, actualSetPool);
+	}
 }
 
 public class ComputationPuzzleDefinitionModel
 {
 	public string PuzzleID;
-	public int Seed = 0;
 	public Dictionary<string,PuzzleModel.MoleculeM> MoleculeDictionary;
 
-	public ComputationProblemSet InitialSet;
-	public List<ComputationProblemSet> SetPool;
+	public List<ComputationTestCaseModel> TestCases;
 
 	public void AddDefinitionFromModel(string filePath)
 	{
@@ -56,45 +99,15 @@ public class ComputationPuzzleDefinitionModel
 		{
 			molDict.Add(kvp.Key, kvp.Value.FromModel());
 		}
-		Dictionary<API.IOIndex, List<Molecule>> actualInitialSet = new();
-		List<Dictionary<API.IOIndex, List<Molecule>>> actualSetPool = new();
-		foreach (var packet in InitialSet.Set)
+
+		List<Tuple<int, Dictionary<API.IOIndex, List<Molecule>>, List<Dictionary<API.IOIndex, List<Molecule>>>>> actualTestCases = new();
+		foreach (var testCase in TestCases)
 		{
-			var index = new API.IOIndex(packet.IsInput, packet.ID);
-			if (actualInitialSet.ContainsKey(index)) throw new Exception("[OMComputation] The computation.yaml file for '" + PuzzleID + "' has duplicate keys in its initialSet: " + index.ToString());
-
-			List<Molecule> molList = new();
-			foreach (var molRef in packet.Molecules)
-			{
-				if (!molDict.ContainsKey(molRef)) throw new Exception("[OMComputation] The computation.yaml file for '" + PuzzleID + "' has an undefined molecule reference in its initialSet: " + molRef);
-				molList.Add(molDict[molRef]);
-			}
-
-			actualInitialSet.Add(index, molList);
+			actualTestCases.Add(testCase.FromModel(molDict, PuzzleID));
 		}
 
-		foreach (var problemSet in SetPool)
-		{
-			Dictionary<API.IOIndex, List<Molecule>> actualProblemSet = new();
-
-			foreach (var packet in problemSet.Set)
-			{
-				var index = new API.IOIndex(packet.IsInput, packet.ID);
-				if (actualProblemSet.ContainsKey(index)) throw new Exception("[OMComputation] The computation.yaml file for '" + PuzzleID + "' has duplicate keys in its setPool: " + index.ToString());
-
-				List<Molecule> molList = new();
-				foreach (var molRef in packet.Molecules)
-				{
-					if (!molDict.ContainsKey(molRef)) throw new Exception("[OMComputation] The computation.yaml file for '" + PuzzleID + "' has a set in setPool with an undefined molecule reference: " + molRef);
-					molList.Add(molDict[molRef]);
-				}
-
-				actualProblemSet.Add(index, molList);
-			}
-
-			actualSetPool.Add(actualProblemSet);
-		}
-
-		internalAPI.AddSimpleComputationPuzzleDefinition(PuzzleID, actualInitialSet, actualSetPool, Seed);
+		//debug - need to actually implement test cases
+		var TestCase = actualTestCases.First();
+		internalAPI.AddSimpleComputationPuzzleDefinition(PuzzleID, TestCase.Item2, TestCase.Item3, TestCase.Item1);
 	}
 }

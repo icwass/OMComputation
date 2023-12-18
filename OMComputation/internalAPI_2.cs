@@ -33,6 +33,9 @@ public static partial class internalAPI
 {
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// public API functions - computation-data getters
+	public static int GetNumberOfTestCases(string puzzleID) => 1;
+
+	////////////////////////////////////////////////////////////
 	public static HashSet<HexIndex> GetComputationFootprint(SolutionEditorBase seb, Part part) => GetComputationFootprint(vanillaAPI.getSolution(seb), new IOIndex(part));
 	public static HashSet<HexIndex> GetComputationFootprint(Solution solution, Part part) => GetComputationFootprint(solution, new IOIndex(part));
 	public static HashSet<HexIndex> GetComputationFootprint(Solution solution, IOIndex ioIndex)
@@ -202,7 +205,7 @@ public static partial class internalAPI
 		public ComputationManagerBase createComputationManager()
 		{
 			var manager = this.managerMaker(this.puzzleID);
-			manager.setPuzzleID(this.puzzleID);
+			manager.puzzleID = this.puzzleID;
 			return manager;
 		}
 
