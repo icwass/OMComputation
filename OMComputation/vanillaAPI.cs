@@ -52,6 +52,7 @@ public static class vanillaAPI
 
 
 	public static PartType getPartType(Part part) => part.method_1159();
+	public static void setPartType(Part part, PartType partType) => new DynamicData(part).Set("field_2691", partType);
 	public static bool PartTypeIsInput(PartType partType) => partType.field_1541;
 	public static bool PartTypeIsOutput(PartType partType) => partType.field_1553; // note: this only cares about STANDARD outputs - we don't computationalize polymer-outputs!
 	public static bool PartTypeStandardIO(PartType partType) => PartTypeIsInput(partType) || PartTypeIsOutput(partType);

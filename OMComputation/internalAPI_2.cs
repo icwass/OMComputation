@@ -61,7 +61,7 @@ public static partial class internalAPI
 		Sim sim = getSimFromSeb(seb);
 		if (sim != null) return GetComputationMolecule_Current(sim, ioIndex);
 
-		var compDefinition = fetchComputationPuzzleDefinition(vanillaAPI.getPuzzleID(seb));
+		var compDefinition = fetchComputationPuzzleDefinition(seb);
 		return compDefinition.createComputationManager().CurrentMolecule(ioIndex);
 	}
 	////////////////////////////////////////////////////////////
@@ -131,6 +131,7 @@ public static partial class internalAPI
 		throw new Exception("[OMComputation] The ComputationPuzzleDefinition for the puzzle '" + puzzleID + "' is missing.");
 	}
 
+	private static ComputationPuzzleDefinition fetchComputationPuzzleDefinition(SolutionEditorBase seb) => fetchComputationPuzzleDefinition(vanillaAPI.getPuzzleID(seb));
 	private static ComputationPuzzleDefinition fetchComputationPuzzleDefinition(string puzzleID) => computationPuzzleDefinitions[puzzleID];
 
 	private static ComputationManagerBase fetchManagerFromSim(Sim sim)
