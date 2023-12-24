@@ -104,6 +104,7 @@ public static class ComputationPart
 	// helper functions
 	private static void computationMethod2000(class_236 class236, HashSet<HexIndex> footprint, Molecule profile, Vector2 rendererOffset, bool isInput)
 	{
+		// draws the glyph only, NOT the input/output molecule
 		var atomHexes = profile.method_1100().Keys;
 
 		class_195 renderer = new class_195(class236.field_1984, class236.field_1985, rendererOffset);
@@ -212,8 +213,9 @@ public static class ComputationPart
 			Molecule reagent = internalAPI.GetComputationMolecule_Current(sim, input).method_1115(rotate).method_1117(shift);
 
 			bool inputIsBlocked = (bool)MainClass.PrivateMethod<Sim>("method_1837").Invoke(sim, new object[] { reagent, hexIndexSet });
+			bool inputIsPaused = internalAPI.IOIndexIsPaused(sim, input);
 
-			if (!inputIsBlocked) action(sim, input, reagent);
+			if (!inputIsBlocked && !inputIsPaused) action(sim, input, reagent);
 		}
 	}
 
@@ -229,6 +231,7 @@ public static class ComputationPart
 
 		PuzzleInputOutput[] puzzleOutputs = vanillaAPI.getPuzzle(sim_self).field_2771;
 		var computationOutputs = vanillaAPI.getPartList(sim_self).Where(x => vanillaAPI.PartIsOutput(x) && internalAPI.PartIsComputationIO(sim_self, x));
+		var pausedOutputs = new Dictionary<Part, PartType>();
 
 		// record what the puzzle outputs are
 		Molecule[] originalOutputs = new Molecule[puzzleOutputs.Length];
@@ -241,6 +244,12 @@ public static class ComputationPart
 		{
 			var product = internalAPI.GetComputationMolecule_Current(sim_self, computationOutput);
 			puzzleOutputs[vanillaAPI.PartIONumber(computationOutput)].field_2813 = product;
+			// temporarily disable computation outputs that are paused
+			if (internalAPI.IOIndexIsPaused(sim_self, computationOutput))
+			{
+				pausedOutputs.Add(computationOutput, vanillaAPI.getPartType(computationOutput));
+				vanillaAPI.setPartType(computationOutput, new PartType());
+			}
 		}
 
 		orig(sim_self, isConsumptionStep);
@@ -255,6 +264,11 @@ public static class ComputationPart
 		{
 			var partSimState = sim_self.field_3821[computationOutput];
 			if (partSimState.field_2743) internalAPI.AdvanceToNextComputationMolecule(sim_self, computationOutput);
+		}
+		// restore the paused outputs
+		foreach (var computationOutput in pausedOutputs.Keys)
+		{
+			vanillaAPI.setPartType(computationOutput, pausedOutputs[computationOutput]);
 		}
 	}
 

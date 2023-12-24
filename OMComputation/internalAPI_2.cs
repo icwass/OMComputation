@@ -92,6 +92,16 @@ public static partial class internalAPI
 		return PuzzleIsComputation(puzzleID) && fetchComputationPuzzleDefinition(puzzleID).IOIndexIsComputationIO(ioIndex);
 	}
 	////////////////////////////////////////////////////////////
+	public static bool IOIndexIsPaused(Sim sim, Part part) => fetchManagerFromSim(sim).IOIndexIsPaused(new IOIndex(part));
+	public static bool IOIndexIsPaused(SolutionEditorBase seb, Part part)
+	{
+		Sim sim = getSimFromSeb(seb);
+		if (sim != null) return IOIndexIsPaused(sim, part);
+
+		var compDefinition = fetchComputationPuzzleDefinition(seb);
+		return compDefinition.createComputationManager().IOIndexIsPaused(new IOIndex(part));
+	}
+	////////////////////////////////////////////////////////////
 	public static HashSet<HexIndex> GetFootprintFromMolecule(Molecule molecule) => GetFootprintFromMolecules(new List<Molecule>() { molecule });
 	public static HashSet<HexIndex> GetFootprintFromMolecules(List<Molecule> molecules)
 	{

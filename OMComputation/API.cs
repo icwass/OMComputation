@@ -85,16 +85,18 @@ public static class API
 			if (!moleculeQueues.ContainsKey(ioIndex)) moleculeQueues.Add(ioIndex, new Queue<Molecule>());
 			if (!previousMolecules.ContainsKey(ioIndex)) previousMolecules.Add(ioIndex, null);
 		}
-		public void AddMoleculeToQueue(IOIndex ioIndex, Molecule molecule)
+		public void AddMoleculeToQueue(IOIndex ioIndex, Molecule molecule, int allowanceChange = 1)
 		{
 			ensureSafeDictionaryAccess(ioIndex);
 			moleculeQueues[ioIndex].Enqueue(molecule);
+			// change allowance by the value of allowanceChange
 		}
 		public void GoToNextMolecule(IOIndex ioIndex)
 		{
 			ensureSafeDictionaryAccess(ioIndex);
 			previousMolecules[ioIndex] = CurrentMolecule(ioIndex);
 			moleculeQueues[ioIndex].Dequeue();
+			// decrease allowance by 1
 		}
 		public Molecule previousMolecule(IOIndex ioIndex)
 		{
@@ -108,6 +110,11 @@ public static class API
 			if (moleculeQueues[ioIndex].Count == 0) AddMoleculesToQueues(ioIndex);
 			if (moleculeQueues[ioIndex].Count > 0) return moleculeQueues[ioIndex].Peek();
 			throw new Exception("[OMComputation] The ComputationManager for puzzle '" + puzzleID + "' failed to generate more molecules for ioIndex " + ioIndex.ToString() + ".");
+		}
+		public bool IOIndexIsPaused(IOIndex ioIndex)
+		{
+			// proper implementation (using "allowances") will come later
+			return false;
 		}
 	}
 
