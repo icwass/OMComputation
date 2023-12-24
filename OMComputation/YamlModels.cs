@@ -69,7 +69,8 @@ public class ComputationTestCaseModel
 	)
 	{
 		Dictionary<API.IOIndex, List<Molecule>> actualInitialSet = new();
-		if (InitialSet != null) InitialSet.FromModel(molDict, puzzleID);
+		if (InitialSet != null) actualInitialSet = InitialSet.FromModel(molDict, puzzleID);
+
 		List<Dictionary<API.IOIndex, List<Molecule>>> actualSetPool = new();
 
 		if (SetPool == null) throw new Exception("[OMComputation] Undefined SetPool in computation.yaml file for '" + puzzleID + "'");
