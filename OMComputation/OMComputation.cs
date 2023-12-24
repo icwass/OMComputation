@@ -187,7 +187,7 @@ public class MainClass : QuintessentialMod
 		var def5B = new API.IOGlyph(firstOutput, cardinalEnergizer(salt, true));
 
 
-		internalAPI.AddComputationPuzzleDefinition("computation-example-1", new List<API.IOGlyph>() { def1 }, (_) => new ComputationManagerTest1());
+		internalAPI.AddComputationPuzzleDefinition("computation-example-1", new List<API.IOGlyph>() { def1 }, (_, _) => new ComputationManagerTest1());
 
 
 		/*
@@ -323,7 +323,7 @@ public class MainClass : QuintessentialMod
 			1 // seed
 		);
 		*/
-		internalAPI.AddComputationPuzzleDefinition("computation-example-5", new List<API.IOGlyph>() { def5A, def5B }, (_) =>
+		internalAPI.AddComputationPuzzleDefinition("computation-example-5", new List<API.IOGlyph>() { def5A, def5B }, (_, _) =>
 		{
 			var ret = new ComputationManagerTest5();
 

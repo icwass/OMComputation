@@ -205,7 +205,8 @@ public static partial class internalAPI
 		// helpers
 		public ComputationManagerBase createComputationManager()
 		{
-			var manager = this.managerMaker(this.puzzleID);
+			int testCase = 0;// testcases are not implemented yet //////////////////////////////////////////////////////////////////////////////////////////////
+			var manager = this.managerMaker(this.puzzleID, testCase);
 			manager.puzzleID = this.puzzleID;
 			return manager;
 		}

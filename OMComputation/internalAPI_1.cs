@@ -83,6 +83,7 @@ public static partial class internalAPI
 	{
 		List<Dictionary<IOIndex, List<Molecule>>> rulebook;
 		Random random;
+		int testCase = 0;
 
 		public override void AddMoleculesToQueues(IOIndex _)
 		{
@@ -105,10 +106,12 @@ public static partial class internalAPI
 		private ComputationManagerSimple(
 			Dictionary<IOIndex, List<Molecule>> initialMolecules,
 			List<Dictionary<IOIndex, List<Molecule>>> rulebook,
-			int seed)
+			int seed,
+			int testCase)
 		{
 			this.rulebook = rulebook;
 			this.random = new(seed);
+			this.testCase = testCase;
 			addMoleculesFromRule(initialMolecules);
 		}
 
@@ -117,7 +120,7 @@ public static partial class internalAPI
 			List<Dictionary<IOIndex, List<Molecule>>> rulebook,
 			int seed)
 		{
-			return (_) => new ComputationManagerSimple(initialMolecules, rulebook, seed);
+			return (_, testCase) => new ComputationManagerSimple(initialMolecules, rulebook, seed, testCase);
 		}
 	}
 }

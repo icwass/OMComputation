@@ -26,7 +26,7 @@ namespace OMComputation;
 public static class API
 {
 	// public types and public data
-	public delegate ComputationManagerBase ComputationManagerMaker(string puzzleID);
+	public delegate ComputationManagerBase ComputationManagerMaker(string puzzleID, int testCase);
 	public struct IOIndex
 	{
 		public readonly bool isInput;
