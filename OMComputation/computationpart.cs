@@ -200,14 +200,14 @@ public static class ComputationPart
 		foreach (Molecule molecule in molecules) hexIndexSet.UnionWith(molecule.method_1100().Keys);
 
 		// don't let computation inputs behave the usual way
-		foreach (Part part in computationInputs.Keys) vanillaAPI.overwriteField(part, "field_2691", internal_computationIO);
+		foreach (Part part in computationInputs.Keys) vanillaAPI.setPartType(part, internal_computationIO);
 
 		orig(sim);
 
 		// instead, do something different
 		foreach (Part input in computationInputs.Keys)
 		{
-			vanillaAPI.overwriteField(input, "field_2691", computationInputs[input]);
+			vanillaAPI.setPartType(input, computationInputs[input]);
 			HexIndex shift = input.method_1161();
 			HexRotation rotate = input.method_1163();
 			Molecule reagent = internalAPI.GetComputationMolecule_Current(sim, input).method_1115(rotate).method_1117(shift);
@@ -248,7 +248,7 @@ public static class ComputationPart
 			if (internalAPI.IOIndexIsPaused(sim_self, computationOutput))
 			{
 				pausedOutputs.Add(computationOutput, vanillaAPI.getPartType(computationOutput));
-				vanillaAPI.setPartType(computationOutput, new PartType());
+				vanillaAPI.setPartType(computationOutput, internal_computationIO);
 			}
 		}
 
